@@ -27,3 +27,6 @@ Issues = "https://github.com/HarperZ9/quanta-ui/issues"
 
 [tool.setuptools.packages.find]
 include = ["quanta_ui*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
