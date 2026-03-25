@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quanta-ui"
+version = "1.0.0"
+description = "Shared PyQt6 theme and widgets for the Quanta ecosystem"
+readme = "README.md"
+license = {text = "Proprietary"}
+authors = [
+    { name = "Zain Dana Harper" },
+]
+requires-python = ">=3.10"
+dependencies = [
+    "PyQt6>=6.5,<7",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/quanta-ui"
+Repository = "https://github.com/HarperZ9/quanta-ui"
+Issues = "https://github.com/HarperZ9/quanta-ui/issues"
+
+[tool.setuptools.packages.find]
+include = ["quanta_ui*"]
