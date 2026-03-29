@@ -1,5 +1,4 @@
 """Tests for quanta-ui shared theme."""
-import pytest
 
 
 class TestColorConstants:
