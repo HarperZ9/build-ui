@@ -1,11 +1,23 @@
 """Quanta ecosystem shared widgets -- Card, StatusDot, Heading, Stat, NavButton, Sidebar, ToastNotification."""
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame,
-    QSizePolicy, QGraphicsDropShadowEffect, QGraphicsOpacityEffect,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QFrame,
+    QSizePolicy,
+    QGraphicsDropShadowEffect,
+    QGraphicsOpacityEffect,
 )
 from PyQt6.QtCore import (
-    Qt, QTimer, pyqtSignal, QPropertyAnimation, QEasingCurve, QPoint,
+    Qt,
+    QTimer,
+    pyqtSignal,
+    QPropertyAnimation,
+    QEasingCurve,
+    QPoint,
 )
 from PyQt6.QtGui import QColor, QPainter
 
@@ -64,7 +76,7 @@ class StatusDot(QWidget):
         # Inner dot
         p.setBrush(QColor(self._color))
         inset = max(2, self.width() // 4)
-        p.drawEllipse(inset, inset, self.width() - inset*2, self.height() - inset*2)
+        p.drawEllipse(inset, inset, self.width() - inset * 2, self.height() - inset * 2)
         p.end()
 
 
@@ -86,7 +98,9 @@ class Heading(QLabel):
 class Stat(QWidget):
     """Compact stat display: value + label."""
 
-    def __init__(self, label: str, value: str = "\u2014", color: str = C.TEXT, parent=None):
+    def __init__(
+        self, label: str, value: str = "\u2014", color: str = C.TEXT, parent=None
+    ):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -165,7 +179,13 @@ class Sidebar(QWidget):
 
     page_changed = pyqtSignal(int)
 
-    def __init__(self, pages: list[str], app_name: str = "Quanta", app_version: str = "1.0.0", parent=None):
+    def __init__(
+        self,
+        pages: list[str],
+        app_name: str = "Quanta",
+        app_version: str = "1.0.0",
+        parent=None,
+    ):
         super().__init__(parent)
         self.setFixedWidth(190)
         self.setStyleSheet(
@@ -210,12 +230,12 @@ class ToastNotification(QFrame):
     """Slide-in toast notification with auto-dismiss and fade-out."""
 
     _ICONS = {
-        "info":    "\u2139\ufe0f",
+        "info": "\u2139\ufe0f",
         "success": "\u2705",
         "warning": "\u26a0\ufe0f",
     }
     _BORDER_COLORS = {
-        "info":    C.CYAN,
+        "info": C.CYAN,
         "success": C.GREEN,
         "warning": C.YELLOW,
     }

@@ -3,23 +3,24 @@
 
 class C:
     """Application color constants -- warm pastel light theme."""
-    BG =        "#fdf9f5"
-    BG_ALT =    "#f8f2ec"
-    SURFACE =   "#ffffff"
-    SURFACE2 =  "#faf5f0"
-    BORDER =    "#ede4da"
+
+    BG = "#fdf9f5"
+    BG_ALT = "#f8f2ec"
+    SURFACE = "#ffffff"
+    SURFACE2 = "#faf5f0"
+    BORDER = "#ede4da"
     BORDER_LT = "#e0d5ca"
-    TEXT =      "#443933"
-    TEXT2 =     "#907e73"
-    TEXT3 =     "#bfb0a4"
-    ACCENT =    "#d4a0a0"
+    TEXT = "#443933"
+    TEXT2 = "#907e73"
+    TEXT3 = "#bfb0a4"
+    ACCENT = "#d4a0a0"
     ACCENT_HI = "#deb0b0"
     ACCENT_TX = "#b07878"
-    GREEN =     "#92ad7e"
-    GREEN_HI =  "#a3be90"
-    YELLOW =    "#e0c87a"
-    RED =       "#d08888"
-    CYAN =      "#95b3ba"
+    GREEN = "#92ad7e"
+    GREEN_HI = "#a3be90"
+    YELLOW = "#e0c87a"
+    RED = "#d08888"
+    CYAN = "#95b3ba"
 
 
 def create_stylesheet(c=None):
