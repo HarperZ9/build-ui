@@ -1,4 +1,4 @@
-"""Quanta ecosystem shared widgets -- Card, StatusDot, Heading, Stat, NavButton, Sidebar, ToastNotification."""
+"""Build ecosystem shared widgets -- Card, StatusDot, Heading, Stat, NavButton, Sidebar, ToastNotification."""
 
 from PyQt6.QtWidgets import (
     QWidget,
@@ -21,7 +21,7 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import QColor, QPainter
 
-from quanta_ui.theme import C
+from build_ui.theme import C
 
 
 class Card(QFrame):
@@ -182,7 +182,7 @@ class Sidebar(QWidget):
     def __init__(
         self,
         pages: list[str],
-        app_name: str = "Quanta",
+        app_name: str = "Build",
         app_version: str = "1.0.0",
         parent=None,
     ):
