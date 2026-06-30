@@ -1,4 +1,4 @@
-"""Quanta ecosystem shared color theme and stylesheet."""
+"""Build ecosystem shared color theme and stylesheet."""
 
 
 class C:

@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "quanta-ui"
+name = "build-ui"
 version = "1.0.0"
-description = "Shared PyQt6 theme and widgets for the Quanta ecosystem"
+description = "Shared PyQt6 theme and widgets for the Build ecosystem"
 readme = "README.md"
 license = {text = "Proprietary"}
 authors = [
@@ -21,12 +21,12 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/HarperZ9/quanta-ui"
-Repository = "https://github.com/HarperZ9/quanta-ui"
-Issues = "https://github.com/HarperZ9/quanta-ui/issues"
+Homepage = "https://github.com/HarperZ9/build-ui"
+Repository = "https://github.com/HarperZ9/build-ui"
+Issues = "https://github.com/HarperZ9/build-ui/issues"
 
 [tool.setuptools.packages.find]
-include = ["quanta_ui*"]
+include = ["build_ui*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
