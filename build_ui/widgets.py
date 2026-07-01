@@ -1,25 +1,25 @@
 """Build ecosystem shared widgets -- Card, StatusDot, Heading, Stat, NavButton, Sidebar, ToastNotification."""
 
-from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QFrame,
-    QSizePolicy,
-    QGraphicsDropShadowEffect,
-    QGraphicsOpacityEffect,
-)
 from PyQt6.QtCore import (
+    QEasingCurve,
+    QPoint,
+    QPropertyAnimation,
     Qt,
     QTimer,
     pyqtSignal,
-    QPropertyAnimation,
-    QEasingCurve,
-    QPoint,
 )
 from PyQt6.QtGui import QColor, QPainter
+from PyQt6.QtWidgets import (
+    QFrame,
+    QGraphicsDropShadowEffect,
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from build_ui.theme import C
 
@@ -98,30 +98,24 @@ class Heading(QLabel):
 class Stat(QWidget):
     """Compact stat display: value + label."""
 
-    def __init__(
-        self, label: str, value: str = "\u2014", color: str = C.TEXT, parent=None
-    ):
+    def __init__(self, label: str, value: str = "\u2014", color: str = C.TEXT, parent=None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
         self._value_label = QLabel(value)
-        self._value_label.setStyleSheet(
-            f"font-size: 22px; font-weight: 600; color: {color};"
-        )
+        self._value_label.setStyleSheet(f"font-size: 22px; font-weight: 600; color: {color};")
         layout.addWidget(self._value_label)
 
         desc = QLabel(label)
         desc.setStyleSheet(f"font-size: 11px; color: {C.TEXT2};")
         layout.addWidget(desc)
 
-    def set_value(self, value: str, color: str = None):
+    def set_value(self, value: str, color: str | None = None):
         self._value_label.setText(value)
         if color:
-            self._value_label.setStyleSheet(
-                f"font-size: 22px; font-weight: 600; color: {color};"
-            )
+            self._value_label.setStyleSheet(f"font-size: 22px; font-weight: 600; color: {color};")
 
 
 class NavButton(QPushButton):
@@ -188,9 +182,7 @@ class Sidebar(QWidget):
     ):
         super().__init__(parent)
         self.setFixedWidth(190)
-        self.setStyleSheet(
-            f"background: {C.BG_ALT}; border-right: 1px solid {C.BORDER};"
-        )
+        self.setStyleSheet(f"background: {C.BG_ALT}; border-right: 1px solid {C.BORDER};")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 14, 10, 14)
@@ -198,10 +190,7 @@ class Sidebar(QWidget):
 
         # Logo / title
         title = QLabel(app_name)
-        title.setStyleSheet(
-            f"font-size: 15px; font-weight: 600; color: {C.ACCENT_TX}; "
-            f"padding: 8px 8px 20px 8px;"
-        )
+        title.setStyleSheet(f"font-size: 15px; font-weight: 600; color: {C.ACCENT_TX}; padding: 8px 8px 20px 8px;")
         layout.addWidget(title)
 
         self._buttons = []
@@ -247,11 +236,7 @@ class ToastNotification(QFrame):
 
         border_color = self._BORDER_COLORS.get(level, C.CYAN)
         self.setStyleSheet(
-            f"ToastNotification {{"
-            f"  background: {C.SURFACE};"
-            f"  border: 1px solid {border_color};"
-            f"  border-radius: 12px;"
-            f"}}"
+            f"ToastNotification {{  background: {C.SURFACE};  border: 1px solid {border_color};  border-radius: 12px;}}"
         )
 
         shadow = QGraphicsDropShadowEffect()
@@ -274,9 +259,7 @@ class ToastNotification(QFrame):
 
         # Message
         msg_label = QLabel(message)
-        msg_label.setStyleSheet(
-            f"font-size: 12px; color: {C.TEXT}; background: transparent;"
-        )
+        msg_label.setStyleSheet(f"font-size: 12px; color: {C.TEXT}; background: transparent;")
         msg_label.setWordWrap(True)
         layout.addWidget(msg_label, stretch=1)
 

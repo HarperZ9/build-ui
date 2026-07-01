@@ -1,0 +1,29 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Build UI, a shared PyQt6 theme and widget library">
+  <defs>
+    <linearGradient id="hero-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#160c28"/>
+      <stop offset="1" stop-color="#0a0816"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="360" fill="url(#hero-bg)"/>
+  <!-- accent band -->
+  <rect x="80" y="250" width="1040" height="10" rx="5" fill="#4636e8" opacity="0.7"/>
+  <!-- window/widget motif -->
+  <g transform="translate(870,90)" opacity="0.92">
+    <rect x="0" y="0" width="250" height="180" rx="14" fill="none" stroke="#4636e8" stroke-width="4"/>
+    <path d="M0 24a14 14 0 0 1 14-14h222a14 14 0 0 1 14 14v14H0z" fill="#4636e8" opacity="0.85"/>
+    <circle cx="20" cy="24" r="5" fill="#ff4d6d"/>
+    <circle cx="38" cy="24" r="5" fill="#ffb84d"/>
+    <circle cx="56" cy="24" r="5" fill="#38d39f"/>
+    <rect x="0" y="38" width="70" height="142" fill="#4636e8" opacity="0.16"/>
+    <rect x="14" y="56" width="42" height="8" rx="4" fill="#4d8bff"/>
+    <rect x="14" y="76" width="42" height="8" rx="4" fill="#4636e8" opacity="0.6"/>
+    <rect x="14" y="96" width="42" height="8" rx="4" fill="#4636e8" opacity="0.6"/>
+    <rect x="86" y="52" width="150" height="60" rx="10" fill="#ffffff" opacity="0.08"/>
+    <rect x="100" y="66" width="80" height="10" rx="5" fill="#ffffff" opacity="0.6"/>
+    <rect x="100" y="86" width="110" height="8" rx="4" fill="#ffffff" opacity="0.35"/>
+    <rect x="86" y="126" width="150" height="40" rx="10" fill="#ffffff" opacity="0.06"/>
+  </g>
+  <text x="80" y="150" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="72" font-weight="700" fill="#ffffff">Build UI</text>
+  <text x="82" y="200" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="26" fill="#b8b0d8">Shared PyQt6 theme and widgets for the Build ecosystem.</text>
+</svg>

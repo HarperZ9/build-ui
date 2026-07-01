@@ -1,0 +1,25 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Build UI mark">
+  <defs>
+    <linearGradient id="bu-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1030"/>
+      <stop offset="1" stop-color="#0c0a1a"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="url(#bu-bg)"/>
+  <!-- window chrome -->
+  <rect x="24" y="30" width="80" height="62" rx="8" fill="none" stroke="#4636e8" stroke-width="3"/>
+  <!-- title bar -->
+  <path d="M24 38a8 8 0 0 1 8-8h64a8 8 0 0 1 8 8v6H24z" fill="#4636e8" opacity="0.8"/>
+  <circle cx="34" cy="38" r="2.6" fill="#ff4d6d"/>
+  <circle cx="43" cy="38" r="2.6" fill="#ffb84d"/>
+  <circle cx="52" cy="38" r="2.6" fill="#38d39f"/>
+  <!-- sidebar -->
+  <rect x="24" y="44" width="20" height="48" fill="#4636e8" opacity="0.18"/>
+  <rect x="30" y="52" width="10" height="4" rx="2" fill="#4d8bff"/>
+  <rect x="30" y="62" width="10" height="4" rx="2" fill="#4636e8" opacity="0.6"/>
+  <rect x="30" y="72" width="10" height="4" rx="2" fill="#4636e8" opacity="0.6"/>
+  <!-- content card -->
+  <rect x="52" y="52" width="42" height="30" rx="5" fill="#ffffff" opacity="0.08"/>
+  <rect x="58" y="58" width="24" height="5" rx="2.5" fill="#ffffff" opacity="0.6"/>
+  <rect x="58" y="68" width="30" height="4" rx="2" fill="#ffffff" opacity="0.35"/>
+</svg>

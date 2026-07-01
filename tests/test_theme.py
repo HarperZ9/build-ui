@@ -73,7 +73,7 @@ class TestStylesheet:
         assert len(style) > 100
 
     def test_create_stylesheet_custom(self):
-        from build_ui.theme import create_stylesheet, C
+        from build_ui.theme import C, create_stylesheet
 
         class Custom(C):
             ACCENT = "#ff0000"
@@ -130,14 +130,14 @@ class TestPackageInit:
         assert build_ui.__version__ == "1.0.0"
 
     def test_top_level_imports(self):
-        from build_ui.theme import C, STYLE, create_stylesheet
+        from build_ui.theme import STYLE, C, create_stylesheet
         from build_ui.widgets import (
             Card,
-            StatusDot,
             Heading,
-            Stat,
             NavButton,
             Sidebar,
+            Stat,
+            StatusDot,
             ToastNotification,
         )
 
