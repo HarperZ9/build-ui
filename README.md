@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/brand/build-ui-hero.png" alt="Build Ui: Pyqt6 Theme & Widget Kit">
+</p>
+
 # Build UI
 
 Shared PyQt6 theme and widget library for the Build ecosystem. Provides a consistent dark theme, reusable chart widgets, and styled controls across all Build applications.
