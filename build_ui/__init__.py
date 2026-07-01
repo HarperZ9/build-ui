@@ -6,4 +6,4 @@ Usage:
     from build_ui.widgets import Card, Heading, Stat, NavButton, Sidebar, StatusDot, ToastNotification
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

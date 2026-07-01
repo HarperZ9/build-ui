@@ -127,7 +127,7 @@ class TestPackageInit:
     def test_version(self):
         import build_ui
 
-        assert build_ui.__version__ == "1.0.0"
+        assert build_ui.__version__ == "1.0.1"
 
     def test_top_level_imports(self):
         from build_ui.theme import STYLE, C, create_stylesheet
