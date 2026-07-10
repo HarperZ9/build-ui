@@ -636,6 +636,7 @@ def test_ci_runs_both_qt_binding_lanes() -> None:
     assert "tests/qt_binding_probe.py" in text
     assert "--cov-fail-under=70" in text
     assert "qtpy mypy-args" in text
+    assert "*flags, 'build_ui'" in text
     assert "--expect-no-binding" in text
 
 
@@ -647,6 +648,7 @@ def test_release_verifies_built_wheel_with_both_extras() -> None:
     assert "--expect-no-binding" in text
     assert 'cd "$RUNNER_TEMP"' in text
     assert "--source-root" in text
+    assert text.count("pip check") >= 3
 
 
 def test_wheel_verifier_exists() -> None:
@@ -676,32 +678,35 @@ import json
 import os
 from pathlib import Path
 
-from packaging.requirements import Requirement
-from packaging.specifiers import SpecifierSet
-from packaging.utils import canonicalize_name
-from packaging.version import Version
-
-
 EXPECTED_ENV = {"PyQt6": "pyqt6", "PySide6": "pyside6"}
 
 
-def _requirements() -> dict[str, Requirement]:
-    requirements = [
-        Requirement(value)
+def _requirements() -> tuple[str, ...]:
+    return tuple(
+        "".join(value.lower().split()).replace('"', "'")
         for value in importlib.metadata.requires("build-ui") or []
-    ]
-    return {canonicalize_name(requirement.name): requirement for requirement in requirements}
+    )
+
+
+def _one_requirement(requirements: tuple[str, ...], name: str) -> str:
+    matches = [value for value in requirements if value.startswith(name)]
+    assert len(matches) == 1, (name, matches)
+    return matches[0]
 
 
 def _assert_metadata() -> None:
     assert importlib.metadata.version("build-ui") == "2.0.0"
     requirements = _requirements()
-    assert requirements["qtpy"].specifier == SpecifierSet(">=2.4.3,<3")
-    assert requirements["pyqt6"].specifier == SpecifierSet(">=6.5,<7")
-    assert requirements["pyside6"].specifier == SpecifierSet(">=6.11.1,<7")
-    assert 'extra == "pyqt6"' in str(requirements["pyqt6"].marker)
-    assert 'extra == "pyside6"' in str(requirements["pyside6"].marker)
-    assert Version(importlib.metadata.version("QtPy")) in SpecifierSet(">=2.4.3,<3")
+    qtpy_requirement = _one_requirement(requirements, "qtpy")
+    pyqt_requirement = _one_requirement(requirements, "pyqt6")
+    pyside_requirement = _one_requirement(requirements, "pyside6")
+    assert ">=2.4.3" in qtpy_requirement and "<3" in qtpy_requirement
+    assert "extra==" not in qtpy_requirement
+    assert ">=6.5" in pyqt_requirement and "<7" in pyqt_requirement
+    assert "extra=='pyqt6'" in pyqt_requirement
+    assert ">=6.11.1" in pyside_requirement and "<7" in pyside_requirement
+    assert "extra=='pyside6'" in pyside_requirement
+    assert importlib.metadata.version("QtPy")
 
 
 def _assert_installed_origin(source_root: Path | None) -> None:
@@ -817,6 +822,10 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
+The verifier is intentionally standard-library-only. Do not add a verifier-only
+runtime dependency to Build UI or rely on QtPy's transitive dependencies; each
+clean environment runs `pip check` before invoking it.
+
 - [ ] **Step 4: Replace CI with the exact binding-isolated workflow**
 
 Replace `.github/workflows/ci.yml` with:
@@ -916,7 +925,7 @@ jobs:
         run: >-
           python -c "import subprocess, sys;
           flags=subprocess.check_output([sys.executable, '-m', 'qtpy', 'mypy-args'], text=True).split();
-          raise SystemExit(subprocess.call([sys.executable, '-m', 'mypy', *flags]))"
+          raise SystemExit(subprocess.call([sys.executable, '-m', 'mypy', *flags, 'build_ui']))"
 ```
 
 - [ ] **Step 5: Make release smoke the built wheel outside the repository**
@@ -948,6 +957,7 @@ it depend on this build job:
         run: |
           python -m venv "$RUNNER_TEMP/core"
           "$RUNNER_TEMP/core/bin/pip" install "build-ui @ $WHEEL_URI"
+          "$RUNNER_TEMP/core/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/core/bin/python" "$GITHUB_WORKSPACE/scripts/verify_wheel.py" \
             --expect-no-binding --source-root "$GITHUB_WORKSPACE"
@@ -959,6 +969,7 @@ it depend on this build job:
         run: |
           python -m venv "$RUNNER_TEMP/pyqt6"
           "$RUNNER_TEMP/pyqt6/bin/pip" install "build-ui[pyqt6] @ $WHEEL_URI"
+          "$RUNNER_TEMP/pyqt6/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/pyqt6/bin/python" "$GITHUB_WORKSPACE/scripts/verify_wheel.py" \
             --expected-api PyQt6 --source-root "$GITHUB_WORKSPACE"
@@ -970,6 +981,7 @@ it depend on this build job:
         run: |
           python -m venv "$RUNNER_TEMP/pyside6"
           "$RUNNER_TEMP/pyside6/bin/pip" install "build-ui[pyside6] @ $WHEEL_URI"
+          "$RUNNER_TEMP/pyside6/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/pyside6/bin/python" "$GITHUB_WORKSPACE/scripts/verify_wheel.py" \
             --expected-api PySide6 --source-root "$GITHUB_WORKSPACE"
