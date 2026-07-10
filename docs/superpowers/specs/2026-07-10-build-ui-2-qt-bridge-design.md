@@ -54,8 +54,8 @@ ensuring Calibrate Pro's frozen graph contains only PySide6.
   `Card`, `StatusDot`, `Heading`, `Stat`, `NavButton`, `Sidebar`, and
   `ToastNotification` at their current import paths.
 - **B2 — QtPy source boundary:** `build_ui.widgets` imports Qt classes and
-  `Signal` from QtPy. It contains no direct PyQt5, PyQt6, PySide2, or PySide6
-  import.
+  `Signal` through the guarded `build_ui._qt` QtPy facade. Package source
+  contains no direct PyQt5, PyQt6, PySide2, or PySide6 import.
 - **B3 — Explicit binding extras:** Core dependency is
   `QtPy>=2.4.3,<3`. Extras provide `PyQt6>=6.5,<7` and
   `PySide6>=6.11.1,<7` independently. The wheel never installs both bindings.
@@ -63,12 +63,14 @@ ensuring Calibrate Pro's frozen graph contains only PySide6.
   does not set or change it at import time. Consumers with multiple installed
   bindings must set it before importing QtPy/Build UI.
 - **B5 — Canonical version:** `build_ui.__version__` is `2.0.0` and setuptools
-  reads it dynamically. README badges, changelog, wheel metadata, and release
-  receipts have no independent version source.
+  reads it dynamically. No executable build, CI, release, or packaging surface
+  defines another version value. Documentation may record the released version;
+  the README badge reads published package metadata rather than a hardcoded
+  badge value.
 - **B6 — Behavioral parity:** Card construction/layout, Sidebar signal
-  emission/navigation, StatusDot/Stat mutation, NavButton selection, and Toast
-  construction/timer behavior pass under both bindings with an offscreen
-  `QApplication`.
+  emission and exactly-one-active navigation, StatusDot painting/mutation,
+  Heading/Stat mutation, NavButton selection, and Toast construction/timer and
+  animation setup pass under both bindings with an offscreen `QApplication`.
 - **B7 — Process isolation in tests:** PyQt6 and PySide6 compatibility probes
   execute in separate subprocesses or clean environments because a process may
   not switch Qt bindings after QtPy imports.
@@ -76,9 +78,11 @@ ensuring Calibrate Pro's frozen graph contains only PySide6.
   legacy `pyqtSignal`, `pyqtSlot`, or `pyqtProperty` tokens in package source.
 - **B9 — Wheel verification:** Clean PyQt6 and PySide6 virtual environments each
   install the built wheel with exactly one binding extra, verify metadata, set
-  `QT_API`, import every public name, and construct representative widgets
-  offscreen.
-- **B10 — Consumer transition:** Publish a migration guide for existing PyQt6
+  `QT_API`, prove the other binding is absent, import every public name, and
+  construct representative widgets offscreen. The verifier runs with a working
+  directory outside the repository and rejects imports resolved from the source
+  checkout.
+- **B10 — Consumer transition:** Publish `MIGRATING.md` for existing PyQt6
   consumers and the Calibrate Pro PySide6 consumer. Record that direct
   `pip install build-ui` installs no binding and is insufficient for widget
   construction.
@@ -88,6 +92,9 @@ ensuring Calibrate Pro's frozen graph contains only PySide6.
 - **B12 — Truthful compatibility:** Build UI 2 does not claim every downstream
   application is migrated. PyQt compatibility is proven at Build UI's public
   boundary; each consumer retains its own release acceptance tests.
+- **B13 — Qt 6 fail-closed guard:** `build_ui._qt` converts a missing binding to
+  an actionable extras error and rejects QtPy selections other than PyQt6 or
+  PySide6. Build UI 2 does not silently run through PyQt5 or PySide2.
 
 ## Package Metadata
 
@@ -132,23 +139,31 @@ from build_ui.widgets import Card
 Library code uses:
 
 ```python
-from qtpy.QtCore import QEasingCurve, QPoint, QPropertyAnimation, Qt, QTimer, Signal
-from qtpy.QtGui import QColor, QPainter
-from qtpy.QtWidgets import QFrame, QLabel, QWidget
+from build_ui._qt import QtCore, QtGui, QtWidgets
+
+Signal = QtCore.Signal
 ```
 
 `Sidebar.page_changed = Signal(int)` retains the observable signal contract.
 No public API exposes a binding-specific signal type.
+
+`build_ui._qt` never sets `QT_API`. It imports QtPy, translates a missing
+binding to an error naming `build-ui[pyqt6]` and `build-ui[pyside6]`, and fails
+unless `qtpy.API_NAME` is `PyQt6` or `PySide6`.
 
 ## CI and Release Matrix
 
 1. Pure theme and metadata tests across Python 3.10–3.13.
 2. PyQt6 compatibility on Linux and Windows, Python 3.12, offscreen.
 3. PySide6 compatibility on Linux and Windows, Python 3.12, offscreen.
-4. Ruff, format, Mypy, build, and credential scan.
-5. Wheel metadata inspection proving QtPy core and independent binding extras.
-6. Two clean wheel smoke environments proving exactly one Qt binding each.
-7. Calibrate Pro integration smoke consumes the local/published candidate wheel
+4. A no-binding environment proves theme-only importability and the actionable
+   widget error.
+5. Ruff, format, and Mypy run with QtPy's selected-binding Mypy arguments;
+   behavioral coverage must be at least 70% without omissions or exclusions.
+6. Wheel metadata inspection proves QtPy core and independent binding extras.
+7. Two clean wheel smoke environments prove exactly one Qt binding each from a
+   working directory outside the source repository.
+8. Calibrate Pro integration smoke consumes the local/published candidate wheel
    using the PySide6 extra before Build UI 2 is published.
 
 ## Documentation and Compatibility
@@ -170,6 +185,13 @@ The migration guide states:
 - A single process must not mix widget objects from two Qt bindings.
 - Build UI 2 preserves public class/function names but changes the dependency
   installation contract, hence the major version.
+- Existing downstream Build applications retain their own acceptance gates.
+  Build Engine's undeclared GUI dependency and Build Ecosystem's aggregate
+  PyQt6/PySide6 extras must be corrected before either claims Build UI 2 or
+  single-binding compatibility.
+
+The binding-specific hero copy is replaced with a binding-neutral SVG. The
+stale PNG is removed rather than retained as a second hand-maintained source.
 
 ## Verification Strategy
 
@@ -177,20 +199,26 @@ The migration guide states:
 2. Source-token tests fail on direct PyQt6 imports and `pyqtSignal`.
 3. Subprocess binding probes fail before QtPy migration and pass afterward under
    both bindings.
-4. Behavioral widget tests assert emitted values and state changes, not only
-   class importability.
-5. Wheel smoke tests install from `dist/`, not the source checkout.
-6. A Calibrate integration probe imports its active window with
+4. A no-binding probe gets an actionable extras error; a forced Qt5 selection is
+   rejected before widget construction.
+5. Behavioral widget tests assert painting, emitted values, exclusive selection,
+   timer state, and animation setup, not only class importability.
+6. Wheel smoke tests install from `dist/`, run outside the repository, and prove
+   their imports resolve from the clean virtual environment.
+7. A Calibrate integration probe imports its active window with
    `QT_API=pyside6` and scans the environment/artifact for PyQt distributions.
 
 ## Delivery Sequence
 
-1. Add metadata/source-contract tests.
-2. Migrate imports and signal declarations through QtPy.
-3. Add binding-isolated behavioral tests.
-4. Move version metadata to one source and define binding extras.
+1. Add metadata tests, move version metadata to one source, and define binding
+   extras.
+2. Add source-boundary tests, the Qt6-only selection guard, and migrate imports
+   and signal declarations through QtPy.
+3. Add binding-isolated behavioral tests, including the test-first Sidebar
+   exclusive-selection correction.
 5. Update CI and clean-wheel verification.
-6. Update README, USAGE, architecture, changelog, AGENTS, and release notes.
+6. Update README, USAGE, architecture, security, contributor/operator docs,
+   `MIGRATING.md`, third-party notices, changelog, and binding-neutral assets.
 7. Build the candidate wheel and consume it from Calibrate Pro's PySide6
    integration acceptance lane.
 8. Publish Build UI 2 only after both binding lanes and Calibrate integration
@@ -201,13 +229,19 @@ The migration guide states:
 - [ ] The same Build UI wheel passes public widget behavior under PyQt6 and
   PySide6 in isolated processes.
 - [ ] Package source has no direct binding import or legacy signal alias.
+- [ ] Missing bindings and Qt5 selections fail with actionable, deterministic
+  errors rather than selecting an unsupported API.
 - [ ] Core metadata installs QtPy and exposes independent binding extras without
   installing both bindings.
 - [ ] Existing public names and signal behavior remain stable.
+- [ ] Behavioral coverage is at least 70% in both binding lanes and Mypy passes
+  with QtPy's binding-specific arguments.
 - [ ] Calibrate Pro resolves Build UI through the PySide6 extra and freezes no
   PyQt package.
 - [ ] Documentation and release metadata accurately describe the new install
   contract and version.
+- [ ] Downstream compatibility claims remain gated on each consumer's own tests;
+  mixed-binding Build Ecosystem aggregates are not represented as proven.
 
 ## Approval Record
 
