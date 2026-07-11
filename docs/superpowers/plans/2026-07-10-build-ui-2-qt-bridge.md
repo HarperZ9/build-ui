@@ -551,6 +551,7 @@ Create `tests/test_widget_behavior.py`:
 ```python
 from __future__ import annotations
 
+import gc
 import os
 
 import pytest
@@ -578,6 +579,7 @@ def app() -> QApplication:
 
 def test_card_with_layout_returns_attached_layout(app: QApplication) -> None:
     card, layout = Card.with_layout(QVBoxLayout, margins=(1, 2, 3, 4), spacing=5)
+    gc.collect()
     assert card.layout() is layout
     margins = layout.contentsMargins()
     assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
@@ -634,6 +636,8 @@ def test_text_and_selection_widgets_preserve_behavior(app: QApplication) -> None
 def test_toast_timer_and_animations_are_owned(app: QApplication) -> None:
     toast = ToastNotification("Saved", level="success")
     try:
+        gc.collect()
+        assert toast.graphicsEffect() is not None
         assert toast._auto_timer.isSingleShot()
         assert toast._auto_timer.isActive()
         assert toast._auto_timer.interval() == 3000
@@ -833,7 +837,7 @@ $env:QT_QPA_PLATFORM = "offscreen"
 Expected probe fields include `"api": "PyQt6"`, version `2.0.0`, and
 `"signal_roundtrip": true`; the other-binding assertion exits 0.
 
-- [ ] **Step 5: Verify the PySide6 lane GREEN in a second clean environment**
+- [ ] **Step 5: Run the PySide6 lane and observe the ownership-specific failure**
 
 ```powershell
 $pysideVenv = Join-Path $env:TEMP ("build-ui-2-pyside6-" + [guid]::NewGuid())
@@ -844,6 +848,29 @@ $pysidePython = Join-Path $pysideVenv "Scripts\python.exe"
 $env:QT_API = "pyside6"
 $env:QT_QPA_PLATFORM = "offscreen"
 & $pysidePython -m pytest tests/test_widget_behavior.py tests/test_theme.py tests/test_packaging_contract.py -q
+```
+
+Expected: the Card and Toast graphics-effect assertions fail because an
+unparented `QGraphicsDropShadowEffect` wrapper can be collected under PySide6.
+This is a binding-lifecycle difference, not a visual-contract difference.
+
+- [ ] **Step 6: Give both initial shadow effects explicit widget ownership**
+
+In `Card.__init__`, construct the initial shadow as:
+
+```python
+shadow = QGraphicsDropShadowEffect(self)
+```
+
+Make the same constructor change in `ToastNotification.__init__`. Do not keep a
+Python-side shadow reference: `_fade_out()` deliberately replaces the Toast
+shadow with a parented opacity effect, and a retained wrapper would become
+stale after replacement.
+
+Re-run the complete PySide6 lane:
+
+```powershell
+& $pysidePython -m pytest tests/test_widget_behavior.py tests/test_theme.py tests/test_packaging_contract.py -q
 & $pysidePython tests/qt_binding_probe.py
 & $pysidePython tests/qt_selection_mismatch_probe.py --installed-api pyside6
 & $pysidePython -c "import importlib.util; assert importlib.util.find_spec('PyQt6') is None"
@@ -852,10 +879,13 @@ $env:QT_QPA_PLATFORM = "offscreen"
 Expected probe fields include `"api": "PySide6"` and
 `"signal_roundtrip": true`; the other-binding assertion exits 0.
 
-- [ ] **Step 6: Commit behavioral parity**
+Then re-run the complete PyQt6 lane from Step 4 to prove the explicit parent is
+binding-neutral.
+
+- [ ] **Step 7: Commit behavioral parity**
 
 ```powershell
-git add build_ui/widgets.py tests/test_widget_behavior.py tests/qt_binding_probe.py tests/qt_selection_mismatch_probe.py
+git add build_ui/widgets.py tests/test_widget_behavior.py tests/qt_binding_probe.py tests/qt_selection_mismatch_probe.py docs/superpowers/plans/2026-07-10-build-ui-2-qt-bridge.md
 git commit -m "test: prove Build UI behavior across Qt bindings"
 ```
 
