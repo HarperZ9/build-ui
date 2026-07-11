@@ -35,7 +35,7 @@ class Card(QFrame):
                 border-radius: 14px;
             }}
         """)
-        shadow = QGraphicsDropShadowEffect()
+        shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(18)
         shadow.setXOffset(0)
         shadow.setYOffset(3)
@@ -210,7 +210,7 @@ class Sidebar(QWidget):
 
     def _on_click(self, index: int):
         for i, btn in enumerate(self._buttons):
-            btn._update_style(i == index)
+            btn.setChecked(i == index)
         self.page_changed.emit(index)
 
 
@@ -238,7 +238,7 @@ class ToastNotification(QFrame):
             f"ToastNotification {{  background: {C.SURFACE};  border: 1px solid {border_color};  border-radius: 12px;}}"
         )
 
-        shadow = QGraphicsDropShadowEffect()
+        shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
         shadow.setXOffset(0)
         shadow.setYOffset(4)
