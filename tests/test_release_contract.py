@@ -90,3 +90,38 @@ def test_release_verifies_built_wheel_with_both_extras() -> None:
 def test_wheel_verifier_exists() -> None:
     assert (ROOT / "scripts" / "verify_wheel.py").is_file()
     assert (ROOT / "tests" / "qt_selection_mismatch_probe.py").is_file()
+
+
+def test_docs_publish_explicit_binding_install_contract() -> None:
+    texts = "\n".join(
+        (ROOT / name).read_text(encoding="utf-8")
+        for name in (
+            "README.md",
+            "USAGE.md",
+            "MIGRATING.md",
+            "ARCHITECTURE.md",
+            "SECURITY.md",
+            "CONTRIBUTING.md",
+            "AGENTS.md",
+            "THIRD_PARTY_NOTICES.md",
+        )
+    )
+    assert "build-ui[pyside6]" in texts
+    assert "build-ui[pyqt6]" in texts
+    assert "QT_API" in texts
+    assert "QtPy" in texts
+    assert "PyQt6 only" not in texts
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    usage = (ROOT / "USAGE.md").read_text(encoding="utf-8")
+    for public_doc in (readme, usage):
+        assert "build-ui[pyside6]" in public_doc
+        assert "build-ui[pyqt6]" in public_doc
+        assert "installs QtPy but no Qt binding" in public_doc
+    notice = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    for token in ("QtPy", "MIT", "PyQt6", "GPL", "PySide6", "LGPLv3"):
+        assert token in notice
+    assert "does not relicense" in notice
+    assert "PyQt6 only" not in (ROOT / "docs" / "ENTERPRISE-READINESS.md").read_text(encoding="utf-8")
+    assert 'src="docs/brand/build-ui-hero.svg"' in readme
+    assert "PyQt6 theme" not in (ROOT / "docs" / "brand" / "build-ui-hero.svg").read_text(encoding="utf-8")
+    assert not (ROOT / "docs" / "brand" / "build-ui-hero.png").exists()
