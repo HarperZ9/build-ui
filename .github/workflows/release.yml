@@ -2,6 +2,17 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the already accepted release assets to PyPI
+        required: true
+        type: boolean
+        default: false
+      release_tag:
+        description: Existing GitHub release tag whose assets were accepted
+        required: true
+        type: string
+        default: v2.0.0
   release:
     types: [published]
 
@@ -83,7 +94,7 @@ jobs:
           path: dist/
 
   publish:
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || inputs.publish
     needs: candidate
     runs-on: ubuntu-latest
     environment: pypi
@@ -94,8 +105,8 @@ jobs:
       - name: Download the exact accepted GitHub release assets
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release download "$RELEASE_TAG" --dir dist
+          RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.release_tag }}
+        run: gh release download "$RELEASE_TAG" --dir dist --repo "$GITHUB_REPOSITORY"
       - name: Verify the accepted release-asset hashes
         run: |
           cp dist/SHA256SUMS.txt SHA256SUMS.txt
