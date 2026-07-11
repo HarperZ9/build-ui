@@ -98,6 +98,9 @@ def test_release_verifies_built_wheel_with_both_extras_before_trusted_publish() 
     assert "sha256sum --check SHA256SUMS.txt" in text
     assert "python -m twine check dist/*.whl dist/*.tar.gz" in text
     assert "rm -f dist/SHA256SUMS.txt" in text
+    publish_section = text.split("\n  publish:", 1)[1]
+    assert "actions/setup-python@v6" in publish_section
+    assert "python -m pip install --upgrade twine packaging" in publish_section
     release_contract_command = "python -m pytest tests/test_release_contract.py -q"
     assert release_contract_command in text
     assert text.index(release_contract_command) < text.index("actions/upload-artifact@v7")

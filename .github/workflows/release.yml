@@ -102,6 +102,9 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - name: Download the exact accepted GitHub release assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -113,7 +116,7 @@ jobs:
           sha256sum --check SHA256SUMS.txt
       - name: Validate the accepted distributions
         run: |
-          python -m pip install --upgrade twine
+          python -m pip install --upgrade twine packaging
           python -m twine check dist/*.whl dist/*.tar.gz
       - name: Keep the checksum receipt out of the PyPI upload set
         run: rm -f dist/SHA256SUMS.txt
