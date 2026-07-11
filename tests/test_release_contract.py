@@ -125,3 +125,9 @@ def test_docs_publish_explicit_binding_install_contract() -> None:
     assert 'src="docs/brand/build-ui-hero.svg"' in readme
     assert "PyQt6 theme" not in (ROOT / "docs" / "brand" / "build-ui-hero.svg").read_text(encoding="utf-8")
     assert not (ROOT / "docs" / "brand" / "build-ui-hero.png").exists()
+
+
+def test_security_policy_stays_release_aware_before_2_0_publication() -> None:
+    security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
+    assert "Until a 2.0 line exists" in security
+    assert "latest release on the supported 2.x line" not in security
