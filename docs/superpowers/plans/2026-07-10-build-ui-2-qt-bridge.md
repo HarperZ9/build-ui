@@ -165,6 +165,7 @@ from __future__ import annotations
 import pathlib
 
 import tomli
+from packaging.licenses import canonicalize_license_expression
 
 import build_ui
 
@@ -188,7 +189,9 @@ def test_version_is_dynamic_and_authoritative() -> None:
 def test_pep639_license_payload_is_declared() -> None:
     data = _project()
     assert data["build-system"]["requires"] == ["setuptools>=77.0.0"]
-    assert data["project"]["license"] == "FSL-1.1-MIT"
+    license_expression = data["project"]["license"]
+    assert license_expression == "LicenseRef-FSL-1.1-MIT"
+    assert canonicalize_license_expression(license_expression) == license_expression
     assert data["project"]["license-files"] == [
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
@@ -898,10 +901,17 @@ git commit -m "test: prove Build UI behavior across Qt bindings"
 - Create: `tests/test_release_contract.py`
 - Modify: `.github/workflows/ci.yml`
 - Modify: `.github/workflows/release.yml`
+- Modify: `pyproject.toml`
+- Modify: `tests/test_packaging_contract.py`
 
 **Interfaces:**
 - Consumes: a wheel path, selected `QT_API`, and the JSON probe from Task 3.
 - Produces: source and built-wheel evidence for PyQt6 and PySide6.
+
+The candidate gate must also accept the emitted PEP 639 metadata. If `twine
+check` rejects the FSL short name because it is not in the SPDX license list,
+declare the same bundled license as `LicenseRef-FSL-1.1-MIT`; this changes the
+metadata identifier, not the license text or terms.
 
 - [ ] **Step 1: Write failing workflow and verifier contract tests**
 
@@ -910,9 +920,46 @@ Create `tests/test_release_contract.py`:
 ```python
 from __future__ import annotations
 
+import ast
 import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def _subprocess_argv(text: str, method: str) -> list[str]:
+    match = re.search(r'python -c "(?P<source>[^"]+)"', text, re.DOTALL)
+    assert match is not None, "CI must invoke the type checker through python -c"
+    source = " ".join(line.strip() for line in match.group("source").splitlines())
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not (
+            isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "subprocess"
+            and node.func.attr == method
+        ):
+            continue
+        assert node.args and isinstance(node.args[0], ast.List)
+        argv: list[str] = []
+        for item in node.args[0].elts:
+            if (
+                isinstance(item, ast.Attribute)
+                and isinstance(item.value, ast.Name)
+                and item.value.id == "sys"
+                and item.attr == "executable"
+            ):
+                argv.append("sys.executable")
+            elif isinstance(item, ast.Constant) and isinstance(item.value, str):
+                argv.append(item.value)
+            elif isinstance(item, ast.Starred) and isinstance(item.value, ast.Name):
+                argv.append(f"*{item.value.id}")
+            else:
+                raise AssertionError(ast.dump(item))
+        return argv
+    raise AssertionError(f"subprocess.{method} call not found")
 
 
 def test_ci_runs_both_qt_binding_lanes() -> None:
@@ -924,8 +971,19 @@ def test_ci_runs_both_qt_binding_lanes() -> None:
     assert "tests/qt_binding_probe.py" in text
     assert "tests/qt_selection_mismatch_probe.py" in text
     assert "--cov-fail-under=70" in text
-    assert "qtpy mypy-args" in text
-    assert "*flags, 'build_ui'" in text
+    assert _subprocess_argv(text, "check_output") == [
+        "sys.executable",
+        "-m",
+        "qtpy",
+        "mypy-args",
+    ]
+    assert _subprocess_argv(text, "call") == [
+        "sys.executable",
+        "-m",
+        "mypy",
+        "*flags",
+        "build_ui",
+    ]
     assert "--expect-no-binding" in text
 
 

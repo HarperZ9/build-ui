@@ -50,11 +50,7 @@ def test_status_dot_mutates_and_paints(app: QApplication) -> None:
     image.fill(0)
     dot.render(image)
     assert dot._color == "#112233"
-    assert any(
-        image.pixelColor(x, y).alpha() > 0
-        for x in range(image.width())
-        for y in range(image.height())
-    )
+    assert any(image.pixelColor(x, y).alpha() > 0 for x in range(image.width()) for y in range(image.height()))
     dot.close()
 
 

@@ -4,6 +4,7 @@ import pathlib
 
 import pytest
 import tomli
+from packaging.licenses import canonicalize_license_expression
 
 import build_ui
 
@@ -25,7 +26,9 @@ def test_version_is_dynamic_and_authoritative() -> None:
 def test_pep639_license_payload_is_declared() -> None:
     data = _project()
     assert data["build-system"]["requires"] == ["setuptools>=77.0.0"]
-    assert data["project"]["license"] == "FSL-1.1-MIT"
+    license_expression = data["project"]["license"]
+    assert license_expression == "LicenseRef-FSL-1.1-MIT"
+    assert canonicalize_license_expression(license_expression) == license_expression
     assert data["project"]["license-files"] == [
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
