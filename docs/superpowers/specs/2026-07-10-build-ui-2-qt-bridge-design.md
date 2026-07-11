@@ -59,14 +59,18 @@ ensuring Calibrate Pro's frozen graph contains only PySide6.
 - **B3 — Explicit binding extras:** Core dependency is
   `QtPy>=2.4.3,<3`. Extras provide `PyQt6>=6.5,<7` and
   `PySide6>=6.11.1,<7` independently. The wheel never installs both bindings.
-- **B4 — Deterministic selection:** Build UI respects the caller's `QT_API` and
-  does not set or change it at import time. Consumers with multiple installed
-  bindings must set it before importing QtPy/Build UI.
-- **B5 — Canonical version:** `build_ui.__version__` is `2.0.0` and setuptools
+- **B4 — Deterministic selection:** Build UI snapshots the caller's `QT_API`
+  before importing QtPy, never mutates it, and fails closed if QtPy selects a
+  different binding than the explicit request. Consumers with multiple
+  installed bindings must set it before importing QtPy/Build UI.
+- **B5 — Canonical version and license payload:** `build_ui.__version__` is
+  `2.0.0` and setuptools
   reads it dynamically. No executable build, CI, release, or packaging surface
   defines another version value. Documentation may record the released version;
   the README badge reads published package metadata rather than a hardcoded
-  badge value.
+  badge value. Setuptools 77 or newer ships `LICENSE` and
+  `THIRD_PARTY_NOTICES.md` as PEP 639 license files under the SPDX expression
+  `FSL-1.1-MIT`.
 - **B6 — Behavioral parity:** Card construction/layout, Sidebar signal
   emission and exactly-one-active navigation, StatusDot painting/mutation,
   Heading/Stat mutation, NavButton selection, and Toast construction/timer and
@@ -81,7 +85,9 @@ ensuring Calibrate Pro's frozen graph contains only PySide6.
   `QT_API`, prove the other binding is absent, import every public name, and
   construct representative widgets offscreen. The verifier runs with a working
   directory outside the repository and rejects imports resolved from the source
-  checkout.
+  checkout. It parses requirements and markers structurally with `packaging`,
+  verifies the installed QtPy version, and proves both license files exist.
+  `packaging` is installed only in verification environments.
 - **B10 — Consumer transition:** Publish `MIGRATING.md` for existing PyQt6
   consumers and the Calibrate Pro PySide6 consumer. Record that direct
   `pip install build-ui` installs no binding and is insufficient for widget
@@ -94,24 +100,41 @@ ensuring Calibrate Pro's frozen graph contains only PySide6.
   boundary; each consumer retains its own release acceptance tests.
 - **B13 — Qt 6 fail-closed guard:** `build_ui._qt` converts a missing binding to
   an actionable extras error and rejects QtPy selections other than PyQt6 or
-  PySide6. Build UI 2 does not silently run through PyQt5 or PySide2.
+  PySide6. It also rejects a supported binding that differs from the explicit
+  request, so Build UI 2 does not silently run through PyQt5, PySide2, or
+  QtPy's supported-binding fallback.
+- **B14 — Branch-bearing execution:** After explicit user approval,
+  implementation runs only in `C:\dev\worktrees\build-ui-2-qt-bridge` on
+  `feat/build-ui-2-qt-bridge`, from a coordinator-recorded reviewed plan tip
+  that descends from `f842789`; detached HEAD execution is rejected.
+- **B15 — Non-publishing candidate:** The candidate workflow contains no PyPI
+  credentials, trusted-publishing permission, or publish job. Publication is a
+  later reviewed change, gated on Calibrate Pro accepting the exact candidate
+  wheel hash.
 
 ## Package Metadata
 
 The intended dependency shape is:
 
 ```toml
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 dynamic = ["version"]
+license = "FSL-1.1-MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 dependencies = ["QtPy>=2.4.3,<3"]
 
 [project.optional-dependencies]
 pyqt6 = ["PyQt6>=6.5,<7"]
 pyside6 = ["PySide6>=6.11.1,<7"]
-test = ["pytest>=8.0", "pytest-cov>=5"]
+test = ["pytest>=8.0", "pytest-cov>=5", "tomli>=2,<3"]
 dev = [
   "pytest>=8.0",
   "pytest-cov>=5",
+  "tomli>=2,<3",
   "ruff>=0.6",
   "mypy>=1.10",
   "build>=1.2",
@@ -147,9 +170,11 @@ Signal = QtCore.Signal
 `Sidebar.page_changed = Signal(int)` retains the observable signal contract.
 No public API exposes a binding-specific signal type.
 
-`build_ui._qt` never sets `QT_API`. It imports QtPy, translates a missing
-binding to an error naming `build-ui[pyqt6]` and `build-ui[pyside6]`, and fails
-unless `qtpy.API_NAME` is `PyQt6` or `PySide6`.
+`build_ui._qt` reads and validates `QT_API` before importing QtPy but never
+mutates it. It translates a missing binding to an error naming
+`build-ui[pyqt6]` and `build-ui[pyside6]`, rejects APIs other than PyQt6 and
+PySide6, and rejects a supported API that differs from the explicit request
+captured before QtPy's import-time fallback.
 
 ## CI and Release Matrix
 
@@ -158,13 +183,17 @@ unless `qtpy.API_NAME` is `PyQt6` or `PySide6`.
 3. PySide6 compatibility on Linux and Windows, Python 3.12, offscreen.
 4. A no-binding environment proves theme-only importability and the actionable
    widget error.
-5. Ruff, format, and Mypy run with QtPy's selected-binding Mypy arguments;
+5. Each one-binding environment requests the absent opposite binding in a fresh
+   subprocess and proves Build UI fails closed.
+6. Ruff, format, and Mypy run with QtPy's selected-binding Mypy arguments;
    behavioral coverage must be at least 70% without omissions or exclusions.
-6. Wheel metadata inspection proves QtPy core and independent binding extras.
-7. Two clean wheel smoke environments prove exactly one Qt binding each from a
+7. Wheel metadata inspection structurally proves QtPy core, independent binding
+   extras, exact markers, and both PEP 639 license files.
+8. Two clean wheel smoke environments prove exactly one Qt binding each from a
    working directory outside the source repository.
-8. Calibrate Pro integration smoke consumes the local/published candidate wheel
-   using the PySide6 extra before Build UI 2 is published.
+9. The candidate workflow builds and verifies without a publication surface.
+10. Calibrate Pro consumes the local candidate wheel using the PySide6 extra
+    and records its SHA-256 before publication is separately approved.
 
 ## Documentation and Compatibility
 
@@ -200,7 +229,8 @@ stale PNG is removed rather than retained as a second hand-maintained source.
 3. Subprocess binding probes fail before QtPy migration and pass afterward under
    both bindings.
 4. A no-binding probe gets an actionable extras error; a forced Qt5 selection is
-   rejected before widget construction.
+   rejected before widget construction; and an explicit request for an absent
+   supported binding fails instead of falling back to the installed one.
 5. Behavioral widget tests assert painting, emitted values, exclusive selection,
    timer state, and animation setup, not only class importability.
 6. Wheel smoke tests install from `dist/`, run outside the repository, and prove
@@ -210,19 +240,22 @@ stale PNG is removed rather than retained as a second hand-maintained source.
 
 ## Delivery Sequence
 
-1. Add metadata tests, move version metadata to one source, and define binding
-   extras.
-2. Add source-boundary tests, the Qt6-only selection guard, and migrate imports
+1. After user approval, create and verify the branch-bearing centralized
+   worktree from the coordinator-recorded reviewed plan tip.
+2. Add metadata tests, move version metadata to one source, define binding
+   extras, and ship the PEP 639 license payload.
+3. Add source-boundary tests, the exact-request Qt6 guard, and migrate imports
    and signal declarations through QtPy.
-3. Add binding-isolated behavioral tests, including the test-first Sidebar
-   exclusive-selection correction.
-5. Update CI and clean-wheel verification.
+4. Add binding-isolated behavioral and opposite-request tests, including the
+   test-first Sidebar exclusive-selection correction.
+5. Update CI and clean-wheel verification; replace publishing automation with
+   a non-publishing candidate workflow.
 6. Update README, USAGE, architecture, security, contributor/operator docs,
    `MIGRATING.md`, third-party notices, changelog, and binding-neutral assets.
 7. Build the candidate wheel and consume it from Calibrate Pro's PySide6
    integration acceptance lane.
-8. Publish Build UI 2 only after both binding lanes and Calibrate integration
-   pass.
+8. Separately design and approve publication only after both binding lanes and
+   Calibrate integration pass for the exact candidate hash.
 
 ## Success Criteria
 
@@ -230,7 +263,8 @@ stale PNG is removed rather than retained as a second hand-maintained source.
   PySide6 in isolated processes.
 - [ ] Package source has no direct binding import or legacy signal alias.
 - [ ] Missing bindings and Qt5 selections fail with actionable, deterministic
-  errors rather than selecting an unsupported API.
+  errors, and an explicit supported request never falls back to the other
+  supported binding.
 - [ ] Core metadata installs QtPy and exposes independent binding extras without
   installing both bindings.
 - [ ] Existing public names and signal behavior remain stable.
@@ -240,6 +274,12 @@ stale PNG is removed rather than retained as a second hand-maintained source.
   PyQt package.
 - [ ] Documentation and release metadata accurately describe the new install
   contract and version.
+- [ ] The installed wheel contains `LICENSE` and `THIRD_PARTY_NOTICES.md`, and
+  requirement markers are compared structurally.
+- [ ] Candidate CI has no publish job or trusted-publishing permission;
+  publication remains blocked on Calibrate's exact-wheel evidence.
+- [ ] Implementation runs on `feat/build-ui-2-qt-bridge` in the approved
+  centralized worktree, never on a detached HEAD or normal `main` checkout.
 - [ ] Downstream compatibility claims remain gated on each consumer's own tests;
   mixed-binding Build Ecosystem aggregates are not represented as proven.
 

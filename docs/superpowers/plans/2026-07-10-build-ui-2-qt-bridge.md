@@ -14,13 +14,20 @@
 - Preserve `C`, `STYLE`, `create_stylesheet`, `Card`, `StatusDot`, `Heading`, `Stat`, `NavButton`, `Sidebar`, and `ToastNotification` at their existing import paths.
 - Package source imports Qt only through QtPy and contains no direct PyQt5, PyQt6, PySide2, or PySide6 import.
 - Core dependency is `QtPy>=2.4.3,<3`; extras are `pyqt6 = ["PyQt6>=6.5,<7"]` and `pyside6 = ["PySide6>=6.11.1,<7"]`.
-- Build UI never sets or changes `QT_API`; callers set it before the first QtPy/Qt import.
+- Build UI snapshots an explicit `QT_API` before importing QtPy, never mutates
+  it, and fails closed if QtPy selects a different supported binding.
 - Tests for different bindings run in isolated processes/environments and never switch a loaded Qt binding in-process.
 - Calibrate Pro consumes `build-ui[pyside6]>=2,<3`; its frozen artifact must contain no PyQt distribution.
-- Do not publish Build UI 2 until both binding lanes, wheel smokes, and the Calibrate integration candidate pass.
-- Implementation must occur in a user-approved linked worktree created from
-  `main` after the approved design-and-plan commit, not in the normal `main`
-  checkout.
+- The candidate workflow must have no publish job, PyPI credential, or
+  trusted-publishing permission. Publication is a later reviewed change after
+  Calibrate accepts the exact candidate wheel hash.
+- Implementation must occur, after explicit user approval, on
+  `feat/build-ui-2-qt-bridge` in
+  `C:\dev\worktrees\build-ui-2-qt-bridge`, created from a
+  coordinator-recorded reviewed plan tip that descends from `f842789`. Never
+  execute on detached HEAD or in the normal `main` checkout.
+- Build metadata uses setuptools `>=77.0.0`, SPDX `FSL-1.1-MIT`, and ships
+  `LICENSE` plus `THIRD_PARTY_NOTICES.md` as PEP 639 license files.
 - Follow strict red-green-refactor: every production behavior change starts with a test observed failing for the intended reason.
 
 ---
@@ -34,15 +41,104 @@
 - `tests/test_packaging_contract.py` — version/dependency/source-token contract.
 - `tests/test_widget_behavior.py` — active-binding widget behavior.
 - `tests/qt_binding_probe.py` — subprocess/wheel probe that emits one JSON receipt.
-- `scripts/verify_wheel.py` — self-contained installed-wheel verifier, run outside the repository.
+- `tests/qt_selection_mismatch_probe.py` — proves an explicit opposite-binding
+  request fails closed in each one-binding environment.
+- `scripts/verify_wheel.py` — installed-wheel verifier using verification-only
+  `packaging`, run outside the repository.
 - `.github/workflows/ci.yml` — source matrix for PyQt6 and PySide6.
-- `.github/workflows/release.yml` — wheel/sdist plus two clean binding smokes.
+- `.github/workflows/release.yml` — non-publishing wheel/sdist candidate plus
+  two clean binding smokes.
 - `README.md`, `USAGE.md`, `MIGRATING.md`, `ARCHITECTURE.md`, `SECURITY.md`,
-  `CONTRIBUTING.md`, `CHANGELOG.md`, `AGENTS.md`,
-  `THIRD_PARTY_NOTICES.md`, and `docs/ENTERPRISE-READINESS.md` — install,
+  `CONTRIBUTING.md`, `CHANGELOG.md`, `AGENTS.md`, and
+  `docs/ENTERPRISE-READINESS.md` — install,
   licensing, and compatibility contract.
+- `THIRD_PARTY_NOTICES.md` — shipped third-party license notice.
 - `docs/brand/build-ui-hero.svg`, `docs/brand/README.md`, and removal of
   `docs/brand/build-ui-hero.png` — one binding-neutral brand source.
+
+---
+
+### Task 0: Create and verify the branch-bearing execution worktree
+
+**Files:**
+- No repository files change in this task.
+
+**Interfaces:**
+- Consumes: explicit user approval and `BUILD_UI_REVIEWED_PLAN_TIP`, supplied by
+  the coordinator after reviewing the committed design and plan.
+- Produces: `C:\dev\worktrees\build-ui-2-qt-bridge` on
+  `feat/build-ui-2-qt-bridge` at that exact reviewed commit.
+
+- [ ] **Step 1: Fail closed unless the reviewed tip and normal checkout are exact**
+
+Run from PowerShell only after the user approves worktree creation:
+
+```powershell
+$sourceRoot = "C:\dev\public\build-ui"
+$worktreeRoot = "C:\dev\worktrees"
+$worktree = Join-Path $worktreeRoot "build-ui-2-qt-bridge"
+$featureBranch = "feat/build-ui-2-qt-bridge"
+
+if ([string]::IsNullOrWhiteSpace($env:BUILD_UI_REVIEWED_PLAN_TIP)) {
+    throw "Coordinator must set BUILD_UI_REVIEWED_PLAN_TIP to the reviewed plan commit"
+}
+$tipExpression = "$($env:BUILD_UI_REVIEWED_PLAN_TIP)^{commit}"
+$reviewedPlanTip = (& git -C $sourceRoot rev-parse $tipExpression).Trim()
+if ($LASTEXITCODE -ne 0) { throw "Reviewed plan tip is not a commit" }
+$currentTip = (& git -C $sourceRoot rev-parse HEAD).Trim()
+if ($currentTip -ne $reviewedPlanTip) { throw "Normal checkout moved after plan review" }
+& git -C $sourceRoot merge-base --is-ancestor f842789 $reviewedPlanTip
+if ($LASTEXITCODE -ne 0) { throw "Reviewed tip does not descend from f842789" }
+if ((& git -C $sourceRoot branch --show-current).Trim() -ne "main") {
+    throw "Reviewed source checkout is not main"
+}
+$dirty = @(& git -C $sourceRoot status --porcelain)
+if ($dirty.Count -ne 0) {
+    throw "Reviewed source checkout is dirty"
+}
+if (Test-Path -LiteralPath $worktree) { throw "Central worktree path already exists" }
+$existingBranch = @(& git -C $sourceRoot branch --list $featureBranch)
+if ($existingBranch.Count -ne 0) {
+    throw "Feature branch already exists; review it explicitly"
+}
+```
+
+Expected: all checks exit without output. The coordinator records the reviewed
+tip at handoff time; this plan deliberately does not hardcode its own future
+commit hash.
+
+- [ ] **Step 2: Create a named branch in the centralized worktree**
+
+```powershell
+New-Item -ItemType Directory -Force -Path $worktreeRoot | Out-Null
+git -C $sourceRoot worktree add -b $featureBranch $worktree $reviewedPlanTip
+if ($LASTEXITCODE -ne 0) { throw "git worktree add failed" }
+if ((& git -C $worktree branch --show-current).Trim() -ne $featureBranch) {
+    throw "Worktree is detached or on the wrong branch"
+}
+if ((& git -C $worktree rev-parse HEAD).Trim() -ne $reviewedPlanTip) {
+    throw "Worktree was created from the wrong commit"
+}
+```
+
+Expected: Git reports a new worktree and the two assertions pass.
+
+- [ ] **Step 3: Establish the clean baseline inside the worktree**
+
+```powershell
+Set-Location -LiteralPath $worktree
+$env:QT_QPA_PLATFORM = "offscreen"
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy build_ui
+git status --short --branch
+```
+
+Expected: 17 tests pass; Ruff, format, and Mypy exit 0; status names
+`feat/build-ui-2-qt-bridge` and is clean. Stop instead of implementing if any
+baseline command fails.
 
 ---
 
@@ -50,6 +146,7 @@
 
 **Files:**
 - Create: `tests/test_packaging_contract.py`
+- Create: `THIRD_PARTY_NOTICES.md`
 - Modify: `build_ui/__init__.py`
 - Modify: `pyproject.toml`
 - Modify: `tests/test_theme.py:127-130`
@@ -66,18 +163,16 @@ Create `tests/test_packaging_contract.py`:
 from __future__ import annotations
 
 import pathlib
-import tomllib
 
-import pytest
+import tomli
 
 import build_ui
-
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 def _project() -> dict:
-    return tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    return tomli.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
 
 def test_version_is_dynamic_and_authoritative() -> None:
@@ -90,6 +185,19 @@ def test_version_is_dynamic_and_authoritative() -> None:
     }
 
 
+def test_pep639_license_payload_is_declared() -> None:
+    data = _project()
+    assert data["build-system"]["requires"] == ["setuptools>=77.0.0"]
+    assert data["project"]["license"] == "FSL-1.1-MIT"
+    assert data["project"]["license-files"] == [
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md",
+    ]
+    notice = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    for token in ("QtPy", "MIT", "PyQt6", "GPL", "PySide6", "LGPLv3"):
+        assert token in notice
+
+
 def test_qtpy_core_and_binding_extras_are_disjoint() -> None:
     project = _project()["project"]
     assert project["dependencies"] == ["QtPy>=2.4.3,<3"]
@@ -97,10 +205,12 @@ def test_qtpy_core_and_binding_extras_are_disjoint() -> None:
     assert extras["pyqt6"] == ["PyQt6>=6.5,<7"]
     assert extras["pyside6"] == ["PySide6>=6.11.1,<7"]
     assert not any("PyQt" in item or "PySide" in item for item in project["dependencies"])
-    for requirements in extras.values():
+    for name, requirements in extras.items():
         has_pyqt = any("PyQt" in item for item in requirements)
         has_pyside = any("PySide" in item for item in requirements)
         assert not (has_pyqt and has_pyside)
+        if name in {"test", "dev"}:
+            assert not has_pyqt and not has_pyside
 ```
 
 - [ ] **Step 2: Run the tests and verify the intended RED state**
@@ -108,11 +218,13 @@ def test_qtpy_core_and_binding_extras_are_disjoint() -> None:
 Run:
 
 ```powershell
+python -m pip install "tomli>=2,<3"
 python -m pytest tests/test_packaging_contract.py -q
 ```
 
 Expected: failures showing version `1.0.1`, a literal project version,
-`PyQt6` as the core dependency, and missing binding extras.
+`PyQt6` as the core dependency, missing binding extras, setuptools below 77,
+and the missing shipped third-party notice.
 
 - [ ] **Step 3: Make version and dependency metadata minimal and canonical**
 
@@ -126,12 +238,17 @@ __version__ = "2.0.0"
 Replace the relevant `pyproject.toml` fields with:
 
 ```toml
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "build-ui"
 dynamic = ["version"]
 description = "Binding-neutral Qt theme and widgets for the Build ecosystem"
 readme = "README.md"
-license = { text = "FSL-1.1-MIT" }
+license = "FSL-1.1-MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 authors = [
     { name = "Zain Dana Harper" },
 ]
@@ -143,11 +260,29 @@ dependencies = [
 [project.optional-dependencies]
 pyqt6 = ["PyQt6>=6.5,<7"]
 pyside6 = ["PySide6>=6.11.1,<7"]
-test = ["pytest>=8.0", "pytest-cov>=5"]
-dev = ["pytest>=8.0", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.10", "build>=1.2"]
+test = ["pytest>=8.0", "pytest-cov>=5", "tomli>=2,<3"]
+dev = ["pytest>=8.0", "pytest-cov>=5", "tomli>=2,<3", "ruff>=0.6", "mypy>=1.10", "build>=1.2"]
 
 [tool.setuptools.dynamic]
 version = {attr = "build_ui.__version__"}
+```
+
+Create `THIRD_PARTY_NOTICES.md` with this complete payload:
+
+```markdown
+# Third-Party Notices
+
+Build UI is licensed under FSL-1.1-MIT. That license does not relicense its
+dependencies.
+
+- QtPy 2.4.3 is available under the MIT License.
+- PyQt6 is available under GPL/commercial terms.
+- PySide6 and the relevant Qt modules are available under
+  LGPLv3/GPLv3/commercial terms.
+
+Binding packages are selected and installed independently through Build UI's
+extras. Their distributed license files and upstream terms govern their use and
+redistribution.
 ```
 
 Replace the hardcoded version assertion in `tests/test_theme.py` with:
@@ -179,7 +314,7 @@ Expected: installation succeeds and both test commands pass.
 - [ ] **Step 5: Commit the independently reviewable metadata change**
 
 ```powershell
-git add build_ui/__init__.py pyproject.toml tests/test_packaging_contract.py tests/test_theme.py
+git add build_ui/__init__.py pyproject.toml THIRD_PARTY_NOTICES.md tests/test_packaging_contract.py tests/test_theme.py
 git commit -m "build: define Build UI 2 binding extras"
 ```
 
@@ -199,7 +334,18 @@ git commit -m "build: define Build UI 2 binding extras"
 
 - [ ] **Step 1: Add failing facade, source-boundary, and legacy-signal tests**
 
-Append to `tests/test_packaging_contract.py`:
+First make the test module's imports Ruff-clean:
+
+```python
+import pathlib
+
+import pytest
+import tomli
+
+import build_ui
+```
+
+Then append to `tests/test_packaging_contract.py`:
 
 ```python
 def test_package_source_has_no_direct_qt_binding_imports() -> None:
@@ -218,16 +364,30 @@ def test_package_source_uses_binding_neutral_signal_names() -> None:
     assert "Signal" in text
 
 
-def test_qt_facade_rejects_qt5_without_mutating_selection() -> None:
+def test_qt_facade_rejects_unsupported_and_fallback_selection() -> None:
     from build_ui._qt import require_supported_api
 
     with pytest.raises(ImportError, match="requires PyQt6 or PySide6"):
-        require_supported_api("PyQt5")
+        require_supported_api("PyQt5", None)
     with pytest.raises(ImportError, match="requires PyQt6 or PySide6"):
-        require_supported_api("PySide2")
+        require_supported_api("PySide2", None)
+    with pytest.raises(ImportError, match="requested PyQt6.*selected PySide6"):
+        require_supported_api("PySide6", "PyQt6")
+
+
+def test_qt_facade_reads_but_never_mutates_qt_api() -> None:
     source = (ROOT / "build_ui" / "_qt.py").read_text(encoding="utf-8")
-    assert "os.environ" not in source
-    assert "setdefault" not in source
+    assert 'os.environ.get("QT_API")' in source
+    forbidden = (
+        'os.environ["QT_API"] =',
+        "os.environ['QT_API'] =",
+        "os.environ.setdefault",
+        "os.environ.update",
+        "os.environ.pop",
+        "del os.environ",
+        "os.putenv",
+    )
+    assert not any(token in source for token in forbidden)
 ```
 
 - [ ] **Step 2: Verify RED before changing production imports**
@@ -246,6 +406,24 @@ Create `build_ui/_qt.py`:
 ```python
 from __future__ import annotations
 
+import os
+
+SUPPORTED_REQUESTS = {"pyqt6": "PyQt6", "pyside6": "PySide6"}
+
+
+def requested_api_name(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.lower()
+    if normalized not in SUPPORTED_REQUESTS:
+        raise ImportError(
+            f"Build UI 2 requires QT_API=pyqt6 or QT_API=pyside6; got {value!r}."
+        )
+    return SUPPORTED_REQUESTS[normalized]
+
+
+REQUESTED_API_NAME = requested_api_name(os.environ.get("QT_API"))
+
 try:
     import qtpy
 except ImportError as exc:
@@ -259,16 +437,26 @@ except ImportError as exc:
 
 SUPPORTED_APIS = frozenset({"PyQt6", "PySide6"})
 
-def require_supported_api(api_name: str) -> str:
+
+def require_supported_api(
+    api_name: str,
+    requested_name: str | None,
+) -> str:
     if api_name not in SUPPORTED_APIS:
         raise ImportError(
             f"Build UI 2 requires PyQt6 or PySide6; QtPy selected {api_name!r}. "
             "Set QT_API=pyqt6 or QT_API=pyside6 before importing Build UI."
         )
+    if requested_name is not None and api_name != requested_name:
+        raise ImportError(
+            f"Build UI explicitly requested {requested_name}, but QtPy selected "
+            f"{api_name}. Install the requested Build UI binding extra and import "
+            "Build UI before any other Qt binding."
+        )
     return api_name
 
 
-QT_API_NAME = require_supported_api(qtpy.API_NAME)
+QT_API_NAME = require_supported_api(qtpy.API_NAME, REQUESTED_API_NAME)
 
 from qtpy import QtCore, QtGui, QtWidgets
 
@@ -278,11 +466,12 @@ __all__ = [
     "QtGui",
     "QtWidgets",
     "require_supported_api",
+    "requested_api_name",
 ]
 ```
 
-The module must never assign `os.environ["QT_API"]` or call
-`os.environ.setdefault`.
+The module snapshots `QT_API` before importing QtPy but must never assign,
+delete, update, or call `setdefault` on the environment.
 
 - [ ] **Step 4: Replace direct widget imports with the guarded QtPy modules**
 
@@ -348,6 +537,7 @@ git commit -m "refactor: route Build UI widgets through QtPy"
 **Files:**
 - Create: `tests/test_widget_behavior.py`
 - Create: `tests/qt_binding_probe.py`
+- Create: `tests/qt_selection_mismatch_probe.py`
 - Modify: `tests/test_theme.py`
 
 **Interfaces:**
@@ -364,7 +554,6 @@ from __future__ import annotations
 import os
 
 import pytest
-
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -476,7 +665,7 @@ import qtpy
 from qtpy.QtWidgets import QApplication
 
 from build_ui import __version__
-from build_ui.theme import C, STYLE, create_stylesheet
+from build_ui.theme import STYLE, C, create_stylesheet
 from build_ui.widgets import (
     Card,
     Heading,
@@ -532,6 +721,74 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
+Create `tests/qt_selection_mismatch_probe.py`:
+
+```python
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+MODULE_BY_API = {"pyqt6": "PyQt6", "pyside6": "PySide6"}
+OPPOSITE_API = {"pyqt6": "pyside6", "pyside6": "pyqt6"}
+CHILD = """
+import json
+
+try:
+    import build_ui.widgets
+except ImportError as exc:
+    print(json.dumps({"failed_closed": True, "error": str(exc)}, sort_keys=True))
+    raise SystemExit(0)
+print(json.dumps({"failed_closed": False}, sort_keys=True))
+raise SystemExit(1)
+"""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--installed-api", choices=tuple(MODULE_BY_API), required=True)
+    args = parser.parse_args()
+    installed_module = MODULE_BY_API[args.installed_api]
+    absent_module = MODULE_BY_API[OPPOSITE_API[args.installed_api]]
+    assert importlib.util.find_spec(installed_module) is not None
+    assert importlib.util.find_spec(absent_module) is None
+    requested_api = OPPOSITE_API[args.installed_api]
+    env = os.environ.copy()
+    env["QT_API"] = requested_api
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    completed = subprocess.run(
+        [sys.executable, "-c", CHILD],
+        cwd=tempfile.gettempdir(),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, (completed.stdout, completed.stderr)
+    payload = json.loads(completed.stdout.strip().splitlines()[-1])
+    assert payload["failed_closed"] is True
+    print(
+        json.dumps(
+            {
+                "installed_api": args.installed_api,
+                "requested_api": requested_api,
+                "failed_closed": True,
+            },
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
 - [ ] **Step 2: Run behavior tests and observe the migration-specific failure**
 
 ```powershell
@@ -569,6 +826,7 @@ $env:QT_API = "pyqt6"
 $env:QT_QPA_PLATFORM = "offscreen"
 & $pyqtPython -m pytest tests/test_widget_behavior.py tests/test_theme.py tests/test_packaging_contract.py -q
 & $pyqtPython tests/qt_binding_probe.py
+& $pyqtPython tests/qt_selection_mismatch_probe.py --installed-api pyqt6
 & $pyqtPython -c "import importlib.util; assert importlib.util.find_spec('PySide6') is None"
 ```
 
@@ -587,6 +845,7 @@ $env:QT_API = "pyside6"
 $env:QT_QPA_PLATFORM = "offscreen"
 & $pysidePython -m pytest tests/test_widget_behavior.py tests/test_theme.py tests/test_packaging_contract.py -q
 & $pysidePython tests/qt_binding_probe.py
+& $pysidePython tests/qt_selection_mismatch_probe.py --installed-api pyside6
 & $pysidePython -c "import importlib.util; assert importlib.util.find_spec('PyQt6') is None"
 ```
 
@@ -596,7 +855,7 @@ Expected probe fields include `"api": "PySide6"` and
 - [ ] **Step 6: Commit behavioral parity**
 
 ```powershell
-git add build_ui/widgets.py tests/test_widget_behavior.py tests/qt_binding_probe.py
+git add build_ui/widgets.py tests/test_widget_behavior.py tests/qt_binding_probe.py tests/qt_selection_mismatch_probe.py
 git commit -m "test: prove Build UI behavior across Qt bindings"
 ```
 
@@ -623,7 +882,6 @@ from __future__ import annotations
 
 import pathlib
 
-
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
@@ -634,6 +892,7 @@ def test_ci_runs_both_qt_binding_lanes() -> None:
     assert "QT_API" in text
     assert "QT_QPA_PLATFORM" in text
     assert "tests/qt_binding_probe.py" in text
+    assert "tests/qt_selection_mismatch_probe.py" in text
     assert "--cov-fail-under=70" in text
     assert "qtpy mypy-args" in text
     assert "*flags, 'build_ui'" in text
@@ -649,10 +908,16 @@ def test_release_verifies_built_wheel_with_both_extras() -> None:
     assert 'cd "$RUNNER_TEMP"' in text
     assert "--source-root" in text
     assert text.count("pip check") >= 3
+    assert "packaging>=24,<26" in text
+    assert "tests/qt_selection_mismatch_probe.py" in text
+    assert "pypa/gh-action-pypi-publish" not in text
+    assert "id-token: write" not in text
+    assert "\n  publish:" not in text
 
 
 def test_wheel_verifier_exists() -> None:
     assert (ROOT / "scripts" / "verify_wheel.py").is_file()
+    assert (ROOT / "tests" / "qt_selection_mismatch_probe.py").is_file()
 ```
 
 - [ ] **Step 2: Verify RED against the current workflows**
@@ -678,18 +943,28 @@ import json
 import os
 from pathlib import Path
 
+from packaging.requirements import Requirement
+from packaging.specifiers import SpecifierSet
+from packaging.utils import canonicalize_name
+from packaging.version import Version
+
 EXPECTED_ENV = {"PyQt6": "pyqt6", "PySide6": "pyside6"}
 
 
-def _requirements() -> tuple[str, ...]:
-    return tuple(
-        "".join(value.lower().split()).replace('"', "'")
-        for value in importlib.metadata.requires("build-ui") or []
-    )
+def _requirements() -> dict[str, list[Requirement]]:
+    result: dict[str, list[Requirement]] = {}
+    for value in importlib.metadata.requires("build-ui") or []:
+        requirement = Requirement(value)
+        name = canonicalize_name(requirement.name)
+        result.setdefault(name, []).append(requirement)
+    return result
 
 
-def _one_requirement(requirements: tuple[str, ...], name: str) -> str:
-    matches = [value for value in requirements if value.startswith(name)]
+def _one_requirement(
+    requirements: dict[str, list[Requirement]],
+    name: str,
+) -> Requirement:
+    matches = requirements[name]
     assert len(matches) == 1, (name, matches)
     return matches[0]
 
@@ -700,13 +975,20 @@ def _assert_metadata() -> None:
     qtpy_requirement = _one_requirement(requirements, "qtpy")
     pyqt_requirement = _one_requirement(requirements, "pyqt6")
     pyside_requirement = _one_requirement(requirements, "pyside6")
-    assert ">=2.4.3" in qtpy_requirement and "<3" in qtpy_requirement
-    assert "extra==" not in qtpy_requirement
-    assert ">=6.5" in pyqt_requirement and "<7" in pyqt_requirement
-    assert "extra=='pyqt6'" in pyqt_requirement
-    assert ">=6.11.1" in pyside_requirement and "<7" in pyside_requirement
-    assert "extra=='pyside6'" in pyside_requirement
-    assert importlib.metadata.version("QtPy")
+    assert qtpy_requirement.specifier == SpecifierSet(">=2.4.3,<3")
+    assert qtpy_requirement.marker is None
+    assert pyqt_requirement.specifier == SpecifierSet(">=6.5,<7")
+    assert str(pyqt_requirement.marker) == 'extra == "pyqt6"'
+    assert pyside_requirement.specifier == SpecifierSet(">=6.11.1,<7")
+    assert str(pyside_requirement.marker) == 'extra == "pyside6"'
+    assert Version(importlib.metadata.version("QtPy")) in qtpy_requirement.specifier
+    distribution = importlib.metadata.distribution("build-ui")
+    license_names = {
+        Path(str(path)).name
+        for path in distribution.files or ()
+        if ".dist-info/licenses/" in str(path).replace("\\", "/")
+    }
+    assert {"LICENSE", "THIRD_PARTY_NOTICES.md"} <= license_names
 
 
 def _assert_installed_origin(source_root: Path | None) -> None:
@@ -746,13 +1028,13 @@ def _verify_binding(expected_api: str, source_root: Path | None) -> dict[str, ob
     other_api = "PySide6" if expected_api == "PyQt6" else "PyQt6"
     assert importlib.util.find_spec(expected_api) is not None
     assert importlib.util.find_spec(other_api) is None
-    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    assert os.environ.get("QT_QPA_PLATFORM") == "offscreen"
 
     import qtpy
     from qtpy.QtWidgets import QApplication
 
     import build_ui
-    from build_ui.theme import C, STYLE, create_stylesheet
+    from build_ui.theme import STYLE, C, create_stylesheet
     from build_ui.widgets import (
         Card,
         Heading,
@@ -764,7 +1046,7 @@ def _verify_binding(expected_api: str, source_root: Path | None) -> dict[str, ob
     )
 
     _assert_installed_origin(source_root)
-    assert qtpy.API_NAME == expected_api
+    assert expected_api == qtpy.API_NAME
     assert build_ui.__version__ == "2.0.0"
     assert all(
         (
@@ -822,9 +1104,10 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-The verifier is intentionally standard-library-only. Do not add a verifier-only
-runtime dependency to Build UI or rely on QtPy's transitive dependencies; each
-clean environment runs `pip check` before invoking it.
+The verifier uses `packaging>=24,<26` for structural requirement and marker
+comparison. Install it only in verification environments; do not add it to
+Build UI's runtime or optional dependency metadata. Each clean environment runs
+`pip check` before invoking the verifier.
 
 - [ ] **Step 4: Replace CI with the exact binding-isolated workflow**
 
@@ -871,7 +1154,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -e ".[test]"
+      - run: python -m pip install -e ".[test]" "packaging>=24,<26"
       - name: Test binding-free surfaces
         run: |
           python -m pytest -q \
@@ -906,6 +1189,7 @@ jobs:
       - run: python -m pip install -e ".[test,${{ matrix.qt-api }}]"
       - run: python -m pytest tests -q --cov=build_ui --cov-report=term-missing --cov-fail-under=70
       - run: python tests/qt_binding_probe.py
+      - run: python tests/qt_selection_mismatch_probe.py --installed-api ${{ matrix.qt-api }}
       - run: python -m pip check
 
   typecheck:
@@ -928,13 +1212,32 @@ jobs:
           raise SystemExit(subprocess.call([sys.executable, '-m', 'mypy', *flags, 'build_ui']))"
 ```
 
-- [ ] **Step 5: Make release smoke the built wheel outside the repository**
+- [ ] **Step 5: Replace publishing automation with a non-publishing candidate workflow**
 
-In `.github/workflows/release.yml`, replace the current build job's steps after
-checkout/setup with the following steps. Keep the existing publish job, but make
-it depend on this build job:
+Replace `.github/workflows/release.yml` completely. This workflow deliberately
+has one candidate job, read-only permissions, no release trigger, no PyPI
+permission, and no publish job:
 
 ```yaml
+name: Candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - name: Install build verification tools
         run: python -m pip install --upgrade build twine
       - name: Install Linux Qt runtime libraries
@@ -956,7 +1259,7 @@ it depend on this build job:
         shell: bash
         run: |
           python -m venv "$RUNNER_TEMP/core"
-          "$RUNNER_TEMP/core/bin/pip" install "build-ui @ $WHEEL_URI"
+          "$RUNNER_TEMP/core/bin/pip" install "packaging>=24,<26" "build-ui @ $WHEEL_URI"
           "$RUNNER_TEMP/core/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/core/bin/python" "$GITHUB_WORKSPACE/scripts/verify_wheel.py" \
@@ -968,11 +1271,13 @@ it depend on this build job:
           QT_QPA_PLATFORM: offscreen
         run: |
           python -m venv "$RUNNER_TEMP/pyqt6"
-          "$RUNNER_TEMP/pyqt6/bin/pip" install "build-ui[pyqt6] @ $WHEEL_URI"
+          "$RUNNER_TEMP/pyqt6/bin/pip" install "packaging>=24,<26" "build-ui[pyqt6] @ $WHEEL_URI"
           "$RUNNER_TEMP/pyqt6/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/pyqt6/bin/python" "$GITHUB_WORKSPACE/scripts/verify_wheel.py" \
             --expected-api PyQt6 --source-root "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/pyqt6/bin/python" "$GITHUB_WORKSPACE/tests/qt_selection_mismatch_probe.py" \
+            --installed-api pyqt6
       - name: Verify wheel with PySide6 only
         shell: bash
         env:
@@ -980,11 +1285,15 @@ it depend on this build job:
           QT_QPA_PLATFORM: offscreen
         run: |
           python -m venv "$RUNNER_TEMP/pyside6"
-          "$RUNNER_TEMP/pyside6/bin/pip" install "build-ui[pyside6] @ $WHEEL_URI"
+          "$RUNNER_TEMP/pyside6/bin/pip" install "packaging>=24,<26" "build-ui[pyside6] @ $WHEEL_URI"
           "$RUNNER_TEMP/pyside6/bin/python" -m pip check
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/pyside6/bin/python" "$GITHUB_WORKSPACE/scripts/verify_wheel.py" \
             --expected-api PySide6 --source-root "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/pyside6/bin/python" "$GITHUB_WORKSPACE/tests/qt_selection_mismatch_probe.py" \
+            --installed-api pyside6
+      - name: Record candidate hashes
+        run: sha256sum dist/* > dist/SHA256SUMS.txt
       - uses: actions/upload-artifact@v7
         with:
           name: dist
@@ -1009,7 +1318,7 @@ git commit -m "ci: verify Build UI wheel with PyQt6 and PySide6"
 
 ---
 
-### Task 5: Publish the migration contract and run acceptance
+### Task 5: Document the migration contract and run acceptance
 
 **Files:**
 - Modify: `README.md`
@@ -1020,7 +1329,6 @@ git commit -m "ci: verify Build UI wheel with PyQt6 and PySide6"
 - Modify: `CONTRIBUTING.md`
 - Modify: `CHANGELOG.md`
 - Modify: `AGENTS.md`
-- Create: `THIRD_PARTY_NOTICES.md`
 - Modify: `docs/ENTERPRISE-READINESS.md`
 - Modify: `docs/brand/build-ui-hero.svg`
 - Modify: `docs/brand/README.md`
@@ -1055,9 +1363,20 @@ def test_docs_publish_explicit_binding_install_contract() -> None:
     assert "QT_API" in texts
     assert "QtPy" in texts
     assert "PyQt6 only" not in texts
-    assert 'src="docs/brand/build-ui-hero.svg"' in (ROOT / "README.md").read_text(
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    usage = (ROOT / "USAGE.md").read_text(encoding="utf-8")
+    for public_doc in (readme, usage):
+        assert 'build-ui[pyside6]' in public_doc
+        assert 'build-ui[pyqt6]' in public_doc
+        assert "installs QtPy but no Qt binding" in public_doc
+    notice = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    for token in ("QtPy", "MIT", "PyQt6", "GPL", "PySide6", "LGPLv3"):
+        assert token in notice
+    assert "does not relicense" in notice
+    assert "PyQt6 only" not in (ROOT / "docs" / "ENTERPRISE-READINESS.md").read_text(
         encoding="utf-8"
     )
+    assert 'src="docs/brand/build-ui-hero.svg"' in readme
     assert "PyQt6 theme" not in (ROOT / "docs/brand/build-ui-hero.svg").read_text(
         encoding="utf-8"
     )
@@ -1121,11 +1440,8 @@ Ecosystem must not aggregate PyQt6-only and PySide6-only applications as one
 proven single-binding environment.
 ```
 
-Create `THIRD_PARTY_NOTICES.md` stating that QtPy 2.4.3 is MIT-licensed, PyQt6
-is available under GPL/commercial terms, PySide6 and relevant Qt modules are
-available under LGPLv3/GPLv3/commercial terms, and the selected binding's own
-license files govern redistribution. Do not claim Build UI's FSL license
-relicenses any dependency.
+Retain the shipped `THIRD_PARTY_NOTICES.md` from Task 1 verbatim; documentation
+may link to it but must not duplicate or weaken its dependency-license terms.
 
 Change the README image source to `docs/brand/build-ui-hero.svg`; replace the
 SVG's `PyQt6 theme` wording and accessible label with `binding-neutral Qt 6
@@ -1161,7 +1477,7 @@ Do not publish yet.
 - [ ] **Step 5: Commit the documentation and candidate evidence**
 
 ```powershell
-git add README.md USAGE.md MIGRATING.md ARCHITECTURE.md SECURITY.md CONTRIBUTING.md CHANGELOG.md AGENTS.md THIRD_PARTY_NOTICES.md docs/ENTERPRISE-READINESS.md docs/brand/build-ui-hero.svg docs/brand/README.md docs/brand/build-ui-hero.png tests/test_release_contract.py
+git add README.md USAGE.md MIGRATING.md ARCHITECTURE.md SECURITY.md CONTRIBUTING.md CHANGELOG.md AGENTS.md docs/ENTERPRISE-READINESS.md docs/brand/build-ui-hero.svg docs/brand/README.md docs/brand/build-ui-hero.png tests/test_release_contract.py
 git commit -m "docs: publish Build UI 2 binding migration"
 ```
 
@@ -1176,10 +1492,12 @@ git commit -m "docs: publish Build UI 2 binding migration"
 - B9 maps to Task 4.
 - B10 and B12 map to Task 5.
 - B13 maps to Tasks 2 and 4.
+- B14 maps to Task 0.
+- B15 maps to Task 4; the candidate workflow has no publication capability.
 - B11 is completed by the downstream Calibrate Pro plan and is a release gate
   before Build UI 2 publication.
 - No task installs both binding extras into one test environment.
 - No task changes another Build application. Build UI's PyQt6 boundary is
   tested, while each downstream application retains its own acceptance gate.
-- The plan contains no publication action. Publication follows Calibrate's
-  candidate-wheel integration proof and final branch review.
+- The plan removes the existing publication job. Publication requires a later
+  reviewed workflow change after Calibrate records the candidate wheel hash.
