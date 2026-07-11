@@ -89,8 +89,12 @@ def test_release_verifies_built_wheel_with_both_extras_before_trusted_publish() 
     assert "\n  publish:" in text
     assert "needs: candidate" in text
     assert "github.event_name == 'release'" in text
+    assert "inputs.publish" in text
+    assert "type: boolean" in text
+    assert "release_tag" in text
     assert "environment: pypi" in text
     assert 'gh release download "$RELEASE_TAG" --dir dist' in text
+    assert '--repo "$GITHUB_REPOSITORY"' in text
     assert "sha256sum --check SHA256SUMS.txt" in text
     assert "python -m twine check dist/*.whl dist/*.tar.gz" in text
     assert "rm -f dist/SHA256SUMS.txt" in text
