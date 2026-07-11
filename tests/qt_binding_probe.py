@@ -49,15 +49,11 @@ def main() -> int:
         "card_base_module": type(card).__mro__[1].__module__,
         "layout": type(layout).__name__,
         "signal_roundtrip": seen == [1],
-        "exclusive_sidebar": [button.isChecked() for button in sidebar._buttons]
-        == [False, True],
+        "exclusive_sidebar": [button.isChecked() for button in sidebar._buttons] == [False, True],
         "public_api": all(public_names),
     }
     print(json.dumps(payload, sort_keys=True))
-    passed = all(
-        payload[name]
-        for name in ("signal_roundtrip", "exclusive_sidebar", "public_api")
-    )
+    passed = all(payload[name] for name in ("signal_roundtrip", "exclusive_sidebar", "public_api"))
     return 0 if passed else 1
 
 
