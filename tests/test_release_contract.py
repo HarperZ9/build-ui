@@ -69,6 +69,10 @@ def test_ci_runs_both_qt_binding_lanes() -> None:
 
 def test_release_verifies_built_wheel_with_both_extras() -> None:
     text = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    assert "actions/checkout@v6" in text
+    assert "actions/checkout@v7" not in text
+    assert "actions/setup-python@v6" in text
+    assert "actions/upload-artifact@v7" in text
     assert "scripts/verify_wheel.py" in text
     assert "pyqt6" in text
     assert "pyside6" in text
