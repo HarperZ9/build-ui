@@ -56,5 +56,12 @@ Calibrate Pro accepted a pre-release candidate on 2026-07-11. Its wheel SHA-256 
 isolated Python 3.12.10 environment selected QtPy 2.4.3 with PySide6 6.11.1,
 installed no PyQt distribution, and reported `build-ui-2-pyside-proof=pass`.
 Documentation metadata changed after that build, so this receipt does not yet
-authorize publication. The final candidate artifact must receive the same
-Calibrate proof and its exact hash must replace this paragraph before release.
+authorize publication by itself.
+
+The final clean-runner candidate from GitHub Actions run `29167649868` then
+received the same Calibrate acceptance proof. Its exact wheel SHA-256 is
+`bfb261851badc03b9b276c17f93e61a1fee4e86ee58d60960b1f130cfa8b7d1e`;
+Python 3.12.10 selected QtPy 2.4.3 with PySide6 6.11.1, installed no PyQt
+distribution, and reported `build-ui-2-pyside-proof=pass`. Those exact wheel,
+sdist, and checksum-receipt assets are the only artifacts authorized for the
+2.0.0 GitHub release and PyPI trusted-publishing job.

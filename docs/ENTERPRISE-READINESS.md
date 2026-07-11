@@ -56,7 +56,6 @@ application one consistent visual language.
   constraint.
 - A process cannot safely mix Qt objects from two bindings, and changing
   `QT_API` after import is unsupported.
-- Calibrate Pro's pre-release receipt is recorded in `MIGRATING.md`; publication
-  remains blocked until the final metadata-bearing wheel receives the same
-  exact-hash acceptance. Other consumers retain their own application-level
-  acceptance gates.
+- Calibrate Pro accepted the final clean-runner 2.0.0 wheel by exact hash; the
+  receipt and immutable GitHub Actions run are recorded in `MIGRATING.md`.
+  Other consumers retain their own application-level acceptance gates.
