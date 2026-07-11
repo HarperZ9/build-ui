@@ -26,10 +26,10 @@ constraint. Build Engine must declare its GUI dependencies, and Build
 Ecosystem must not aggregate PyQt6-only and PySide6-only applications as one
 proven single-binding environment.
 
-### Calibrate Pro candidate handoff
+### Calibrate Pro candidate acceptance
 
-The candidate has not been published. Before Build UI 2 is released, hand the
-Calibrate Pro acceptance lane these exact files from the same candidate run:
+Before Build UI 2 is released, hand the Calibrate Pro acceptance lane these
+exact files from the same candidate run:
 
 - `dist/build_ui-2.0.0-py3-none-any.whl`
 - `dist/SHA256SUMS.txt`, including the SHA-256 line for that wheel
@@ -50,3 +50,11 @@ The reported SHA-256 must equal the wheel's entry in `dist/SHA256SUMS.txt`.
 Handoff evidence consists of the resolved wheel path, matching SHA-256, Python,
 QtPy, and PySide6 versions, and the passing probe output. A passing Build UI
 candidate alone does not claim Calibrate Pro release acceptance.
+
+Calibrate Pro accepted a pre-release candidate on 2026-07-11. Its wheel SHA-256 was
+`91066089a8a7468b3249388a7508bb4eed42142269cca263927fa3a83e1884ff`; the
+isolated Python 3.12.10 environment selected QtPy 2.4.3 with PySide6 6.11.1,
+installed no PyQt distribution, and reported `build-ui-2-pyside-proof=pass`.
+Documentation metadata changed after that build, so this receipt does not yet
+authorize publication. The final candidate artifact must receive the same
+Calibrate proof and its exact hash must replace this paragraph before release.

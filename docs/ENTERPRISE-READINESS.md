@@ -24,11 +24,12 @@ application one consistent visual language.
 
 - The same color class produces the same stylesheet string, and widgets render
   deterministically from the same constructor arguments and Qt environment.
-- The candidate workflow builds one wheel and sdist, runs Twine validation,
+- The release workflow builds one wheel and sdist, runs Twine validation,
   records SHA-256 hashes, and performs clean installed-wheel checks outside the
   source checkout.
-- Candidate automation is manual and read-only. It has no publish job, release
-  trigger, or trusted-publishing permission.
+- Manual runs remain non-publishing. A published GitHub release may use OIDC
+  trusted publishing only after the candidate job and all three isolated wheel
+  lanes pass.
 
 ## Dependencies and boundary
 
@@ -55,5 +56,7 @@ application one consistent visual language.
   constraint.
 - A process cannot safely mix Qt objects from two bindings, and changing
   `QT_API` after import is unsupported.
-- The candidate is not published until Calibrate Pro records and accepts the
-  exact wheel hash in a separate downstream task.
+- Calibrate Pro's pre-release receipt is recorded in `MIGRATING.md`; publication
+  remains blocked until the final metadata-bearing wheel receives the same
+  exact-hash acceptance. Other consumers retain their own application-level
+  acceptance gates.

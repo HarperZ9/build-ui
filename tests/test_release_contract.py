@@ -67,7 +67,7 @@ def test_ci_runs_both_qt_binding_lanes() -> None:
     assert "--expect-no-binding" in text
 
 
-def test_release_verifies_built_wheel_with_both_extras() -> None:
+def test_release_verifies_built_wheel_with_both_extras_before_trusted_publish() -> None:
     text = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     assert "actions/checkout@v6" in text
     assert "actions/checkout@v7" not in text
@@ -82,9 +82,18 @@ def test_release_verifies_built_wheel_with_both_extras() -> None:
     assert text.count("pip check") >= 3
     assert "packaging>=24,<26" in text
     assert "tests/qt_selection_mismatch_probe.py" in text
-    assert "pypa/gh-action-pypi-publish" not in text
-    assert "id-token: write" not in text
-    assert "\n  publish:" not in text
+    assert "release:" in text
+    assert "types: [published]" in text
+    assert "pypa/gh-action-pypi-publish@release/v1" in text
+    assert "id-token: write" in text
+    assert "\n  publish:" in text
+    assert "needs: candidate" in text
+    assert "github.event_name == 'release'" in text
+    assert "environment: pypi" in text
+    assert 'gh release download "$RELEASE_TAG" --dir dist' in text
+    assert "sha256sum --check SHA256SUMS.txt" in text
+    assert "python -m twine check dist/*.whl dist/*.tar.gz" in text
+    assert "rm -f dist/SHA256SUMS.txt" in text
     release_contract_command = "python -m pytest tests/test_release_contract.py -q"
     assert release_contract_command in text
     assert text.index(release_contract_command) < text.index("actions/upload-artifact@v7")
@@ -152,7 +161,7 @@ def test_contributor_verification_runs_both_binding_isolated_probes() -> None:
         assert token in contributing
 
 
-def test_migration_docs_define_the_calibrate_candidate_handoff() -> None:
+def test_migration_docs_record_the_accepted_calibrate_candidate_handoff() -> None:
     migrating = (ROOT / "MIGRATING.md").read_text(encoding="utf-8")
     for token in (
         "dist/build_ui-2.0.0-py3-none-any.whl",
@@ -161,6 +170,7 @@ def test_migration_docs_define_the_calibrate_candidate_handoff() -> None:
         "Get-FileHash -LiteralPath $env:BUILD_UI_2_WHEEL -Algorithm SHA256",
         'python -m pip install "$($env:BUILD_UI_2_WHEEL)[pyside6]"',
         "python -m pytest tests/test_qt_binding_contract.py -q",
-        "candidate has not been published",
+        "91066089a8a7468b3249388a7508bb4eed42142269cca263927fa3a83e1884ff",
+        "build-ui-2-pyside-proof=pass",
     ):
         assert token in migrating
