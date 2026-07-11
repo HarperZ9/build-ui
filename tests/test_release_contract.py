@@ -85,6 +85,9 @@ def test_release_verifies_built_wheel_with_both_extras() -> None:
     assert "pypa/gh-action-pypi-publish" not in text
     assert "id-token: write" not in text
     assert "\n  publish:" not in text
+    release_contract_command = "python -m pytest tests/test_release_contract.py -q"
+    assert release_contract_command in text
+    assert text.index(release_contract_command) < text.index("actions/upload-artifact@v7")
 
 
 def test_wheel_verifier_exists() -> None:
@@ -122,12 +125,42 @@ def test_docs_publish_explicit_binding_install_contract() -> None:
         assert token in notice
     assert "does not relicense" in notice
     assert "PyQt6 only" not in (ROOT / "docs" / "ENTERPRISE-READINESS.md").read_text(encoding="utf-8")
-    assert 'src="docs/brand/build-ui-hero.svg"' in readme
+    assert ('src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/docs/brand/build-ui-hero.svg"') in readme
+    assert 'src="docs/brand/build-ui-hero.svg"' not in readme
     assert "PyQt6 theme" not in (ROOT / "docs" / "brand" / "build-ui-hero.svg").read_text(encoding="utf-8")
     assert not (ROOT / "docs" / "brand" / "build-ui-hero.png").exists()
 
 
-def test_security_policy_stays_release_aware_before_2_0_publication() -> None:
+def test_security_policy_supports_the_released_2_x_line() -> None:
     security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
-    assert "Until a 2.0 line exists" in security
-    assert "latest release on the supported 2.x line" not in security
+    normalized = " ".join(security.split())
+    assert "latest release on the supported 2.x line" in normalized
+    assert "Until a 2.0 line exists" not in security
+
+
+def test_contributor_verification_runs_both_binding_isolated_probes() -> None:
+    contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    for token in (
+        ".venv-pyqt6",
+        ".venv-pyside6",
+        'QT_API = "pyqt6"',
+        'QT_API = "pyside6"',
+        "tests/qt_binding_probe.py",
+        "tests/qt_selection_mismatch_probe.py --installed-api pyqt6",
+        "tests/qt_selection_mismatch_probe.py --installed-api pyside6",
+    ):
+        assert token in contributing
+
+
+def test_migration_docs_define_the_calibrate_candidate_handoff() -> None:
+    migrating = (ROOT / "MIGRATING.md").read_text(encoding="utf-8")
+    for token in (
+        "dist/build_ui-2.0.0-py3-none-any.whl",
+        "dist/SHA256SUMS.txt",
+        "BUILD_UI_2_WHEEL",
+        "Get-FileHash -LiteralPath $env:BUILD_UI_2_WHEEL -Algorithm SHA256",
+        'python -m pip install "$($env:BUILD_UI_2_WHEEL)[pyside6]"',
+        "python -m pytest tests/test_qt_binding_contract.py -q",
+        "candidate has not been published",
+    ):
+        assert token in migrating
