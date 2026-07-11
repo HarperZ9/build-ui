@@ -1,16 +1,25 @@
-# Build UI — Usage Guide
+# Build UI - Usage Guide
 
-Build UI is a shared PyQt6 theme and widget library for the Build ecosystem. It
-has no CLI or GUI of its own — it is consumed as a library by other Build
-applications.
+Build UI is a binding-neutral Qt 6 theme and widget library for the Build
+ecosystem. It has no CLI or GUI of its own - it is consumed as a library by
+other Build applications.
 
 ## Install
 
+Choose one supported binding:
+
 ```bash
-pip install build-ui
+pip install "build-ui[pyside6]>=2,<3"
+# or
+pip install "build-ui[pyqt6]>=2,<3"
 ```
 
-Requires Python 3.10+ and PyQt6 (installed automatically as a dependency).
+Install exactly one binding extra. Plain `pip install build-ui` installs QtPy but no Qt binding,
+which is useful when an application already supplies PySide6 or PyQt6. If both
+bindings are present in an environment, set
+`QT_API=pyside6` or `QT_API=pyqt6` before importing QtPy or Build UI. Do not
+change `QT_API` after import, and do not mix objects from two bindings in one
+process.
 
 ## Theme
 
@@ -58,10 +67,11 @@ toast = ToastNotification("Saved successfully", level="success", parent=main_win
 toast.slide_in()
 ```
 
-All widgets require a running `QApplication` to construct (standard PyQt6
+All widgets require a running `QApplication` to construct (standard Qt
 behavior); the theme module can be imported and used with no display present.
 
 ## See also
 
-- `README.md` — project overview.
-- `ARCHITECTURE.md` — module responsibilities and design decisions.
+- `README.md` - project overview.
+- `ARCHITECTURE.md` - module responsibilities and design decisions.
+- `MIGRATING.md` - Build UI 1 to 2 binding and environment guidance.
