@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/brand/build-ui-hero.svg" alt="Build UI, a binding-neutral Qt 6 theme and widget library">
+  <img src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/docs/brand/build-ui-hero.svg" alt="Build UI, a binding-neutral Qt 6 theme and widget library">
 </p>
 <!-- Project mark: docs/brand/build-ui-mark.svg -->
 
