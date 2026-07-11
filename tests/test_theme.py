@@ -125,9 +125,11 @@ class TestPackageInit:
     """Test package-level imports."""
 
     def test_version(self):
+        import importlib.metadata
+
         import build_ui
 
-        assert build_ui.__version__ == "1.0.1"
+        assert build_ui.__version__ == importlib.metadata.version("build-ui")
 
     def test_top_level_imports(self):
         from build_ui.theme import STYLE, C, create_stylesheet

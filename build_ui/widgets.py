@@ -1,25 +1,24 @@
 """Build ecosystem shared widgets -- Card, StatusDot, Heading, Stat, NavButton, Sidebar, ToastNotification."""
 
-from PyQt6.QtCore import (
-    QEasingCurve,
-    QPoint,
-    QPropertyAnimation,
-    Qt,
-    QTimer,
-    pyqtSignal,
-)
-from PyQt6.QtGui import QColor, QPainter
-from PyQt6.QtWidgets import (
-    QFrame,
-    QGraphicsDropShadowEffect,
-    QGraphicsOpacityEffect,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSizePolicy,
-    QVBoxLayout,
-    QWidget,
-)
+from build_ui._qt import QtCore, QtGui, QtWidgets
+
+QEasingCurve = QtCore.QEasingCurve
+QPoint = QtCore.QPoint
+QPropertyAnimation = QtCore.QPropertyAnimation
+Qt = QtCore.Qt
+QTimer = QtCore.QTimer
+Signal = QtCore.Signal
+QColor = QtGui.QColor
+QPainter = QtGui.QPainter
+QFrame = QtWidgets.QFrame
+QGraphicsDropShadowEffect = QtWidgets.QGraphicsDropShadowEffect
+QGraphicsOpacityEffect = QtWidgets.QGraphicsOpacityEffect
+QHBoxLayout = QtWidgets.QHBoxLayout
+QLabel = QtWidgets.QLabel
+QPushButton = QtWidgets.QPushButton
+QSizePolicy = QtWidgets.QSizePolicy
+QVBoxLayout = QtWidgets.QVBoxLayout
+QWidget = QtWidgets.QWidget
 
 from build_ui.theme import C
 
@@ -36,7 +35,7 @@ class Card(QFrame):
                 border-radius: 14px;
             }}
         """)
-        shadow = QGraphicsDropShadowEffect()
+        shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(18)
         shadow.setXOffset(0)
         shadow.setYOffset(3)
@@ -171,7 +170,7 @@ class NavButton(QPushButton):
 class Sidebar(QWidget):
     """Left sidebar with navigation buttons."""
 
-    page_changed = pyqtSignal(int)
+    page_changed = Signal(int)
 
     def __init__(
         self,
@@ -211,7 +210,7 @@ class Sidebar(QWidget):
 
     def _on_click(self, index: int):
         for i, btn in enumerate(self._buttons):
-            btn._update_style(i == index)
+            btn.setChecked(i == index)
         self.page_changed.emit(index)
 
 
@@ -239,7 +238,7 @@ class ToastNotification(QFrame):
             f"ToastNotification {{  background: {C.SURFACE};  border: 1px solid {border_color};  border-radius: 12px;}}"
         )
 
-        shadow = QGraphicsDropShadowEffect()
+        shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
         shadow.setXOffset(0)
         shadow.setYOffset(4)
