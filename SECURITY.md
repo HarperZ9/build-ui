@@ -2,8 +2,8 @@
 
 ## Supported
 
-Build UI follows a rolling release. The latest release on the supported 2.x
-line receives fixes.
+Build UI follows a rolling release. Until a 2.0 line exists, only the latest
+release on the default branch is supported for fixes.
 
 ## Reporting a vulnerability
 
