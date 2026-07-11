@@ -1,25 +1,24 @@
 """Build ecosystem shared widgets -- Card, StatusDot, Heading, Stat, NavButton, Sidebar, ToastNotification."""
 
-from PyQt6.QtCore import (
-    QEasingCurve,
-    QPoint,
-    QPropertyAnimation,
-    Qt,
-    QTimer,
-    pyqtSignal,
-)
-from PyQt6.QtGui import QColor, QPainter
-from PyQt6.QtWidgets import (
-    QFrame,
-    QGraphicsDropShadowEffect,
-    QGraphicsOpacityEffect,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSizePolicy,
-    QVBoxLayout,
-    QWidget,
-)
+from build_ui._qt import QtCore, QtGui, QtWidgets
+
+QEasingCurve = QtCore.QEasingCurve
+QPoint = QtCore.QPoint
+QPropertyAnimation = QtCore.QPropertyAnimation
+Qt = QtCore.Qt
+QTimer = QtCore.QTimer
+Signal = QtCore.Signal
+QColor = QtGui.QColor
+QPainter = QtGui.QPainter
+QFrame = QtWidgets.QFrame
+QGraphicsDropShadowEffect = QtWidgets.QGraphicsDropShadowEffect
+QGraphicsOpacityEffect = QtWidgets.QGraphicsOpacityEffect
+QHBoxLayout = QtWidgets.QHBoxLayout
+QLabel = QtWidgets.QLabel
+QPushButton = QtWidgets.QPushButton
+QSizePolicy = QtWidgets.QSizePolicy
+QVBoxLayout = QtWidgets.QVBoxLayout
+QWidget = QtWidgets.QWidget
 
 from build_ui.theme import C
 
@@ -171,7 +170,7 @@ class NavButton(QPushButton):
 class Sidebar(QWidget):
     """Left sidebar with navigation buttons."""
 
-    page_changed = pyqtSignal(int)
+    page_changed = Signal(int)
 
     def __init__(
         self,

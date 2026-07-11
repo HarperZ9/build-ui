@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 
+import pytest
 import tomli
 
 import build_ui
@@ -47,3 +48,45 @@ def test_qtpy_core_and_binding_extras_are_disjoint() -> None:
         assert not (has_pyqt and has_pyside)
         if name in {"test", "dev"}:
             assert not has_pyqt and not has_pyside
+
+
+def test_package_source_has_no_direct_qt_binding_imports() -> None:
+    forbidden = ("from PyQt", "import PyQt", "from PySide", "import PySide")
+    for path in sorted((ROOT / "build_ui").rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        assert not any(token in text for token in forbidden), path
+
+
+def test_package_source_uses_binding_neutral_signal_names() -> None:
+    text = (ROOT / "build_ui" / "widgets.py").read_text(encoding="utf-8")
+    assert "pyqtSignal" not in text
+    assert "pyqtSlot" not in text
+    assert "pyqtProperty" not in text
+    assert "from build_ui._qt import" in text
+    assert "Signal" in text
+
+
+def test_qt_facade_rejects_unsupported_and_fallback_selection() -> None:
+    from build_ui._qt import require_supported_api
+
+    with pytest.raises(ImportError, match="requires PyQt6 or PySide6"):
+        require_supported_api("PyQt5", None)
+    with pytest.raises(ImportError, match="requires PyQt6 or PySide6"):
+        require_supported_api("PySide2", None)
+    with pytest.raises(ImportError, match="requested PyQt6.*selected PySide6"):
+        require_supported_api("PySide6", "PyQt6")
+
+
+def test_qt_facade_reads_but_never_mutates_qt_api() -> None:
+    source = (ROOT / "build_ui" / "_qt.py").read_text(encoding="utf-8")
+    assert 'os.environ.get("QT_API")' in source
+    forbidden = (
+        'os.environ["QT_API"] =',
+        "os.environ['QT_API'] =",
+        "os.environ.setdefault",
+        "os.environ.update",
+        "os.environ.pop",
+        "del os.environ",
+        "os.putenv",
+    )
+    assert not any(token in source for token in forbidden)
