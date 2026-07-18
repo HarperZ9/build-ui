@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/zentropy-banner.png" alt="Build UI, a binding-neutral Qt 6 theme and widget library">
+  <img src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/.github/assets/zentropy-banner.png" alt="Build UI, a binding-neutral Qt 6 theme and widget library">
 </p>
 <!-- Project mark: docs/brand/build-ui-mark.svg -->
 
