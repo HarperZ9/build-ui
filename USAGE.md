@@ -30,13 +30,15 @@ from build_ui.theme import C, STYLE, create_stylesheet
 app.setStyleSheet(STYLE)
 
 # C exposes color constants used throughout the stylesheet and widgets
-print(C.ACCENT)   # '#d4a0a0'
-print(C.BG)        # '#fdf9f5'
+print(C.ACCENT)  # '#d4a0a0'
+print(C.BG)  # '#fdf9f5'
+
 
 # Generate a themed variant by subclassing C and overriding constants
 class DarkC(C):
     BG = "#161616"
     TEXT = "#f0f0f0"
+
 
 dark_style = create_stylesheet(DarkC)
 ```

@@ -66,9 +66,11 @@ from build_ui.widgets import Card, Heading, Stat, NavButton, Sidebar, StatusDot,
 # Apply the shared stylesheet to a QApplication
 app.setStyleSheet(STYLE)
 
+
 # Build a themed variant by overriding constants
 class DarkC(C):
     BG = "#161616"
+
 
 dark_style = create_stylesheet(DarkC)
 

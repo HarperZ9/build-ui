@@ -181,9 +181,7 @@ def test_version_is_dynamic_and_authoritative() -> None:
     assert build_ui.__version__ == "2.0.0"
     assert data["project"]["dynamic"] == ["version"]
     assert "version" not in data["project"]
-    assert data["tool"]["setuptools"]["dynamic"]["version"] == {
-        "attr": "build_ui.__version__"
-    }
+    assert data["tool"]["setuptools"]["dynamic"]["version"] == {"attr": "build_ui.__version__"}
 
 
 def test_pep639_license_payload_is_declared() -> None:
@@ -419,9 +417,7 @@ def requested_api_name(value: str | None) -> str | None:
         return None
     normalized = value.lower()
     if normalized not in SUPPORTED_REQUESTS:
-        raise ImportError(
-            f"Build UI 2 requires QT_API=pyqt6 or QT_API=pyside6; got {value!r}."
-        )
+        raise ImportError(f"Build UI 2 requires QT_API=pyqt6 or QT_API=pyside6; got {value!r}.")
     return SUPPORTED_REQUESTS[normalized]
 
 
@@ -432,8 +428,7 @@ try:
 except ImportError as exc:
     if type(exc).__name__ == "QtBindingsNotFoundError":
         raise ImportError(
-            'Build UI widgets require one Qt 6 binding; install '
-            '"build-ui[pyqt6]>=2,<3" or "build-ui[pyside6]>=2,<3".'
+            'Build UI widgets require one Qt 6 binding; install "build-ui[pyqt6]>=2,<3" or "build-ui[pyside6]>=2,<3".'
         ) from exc
     raise
 
@@ -604,11 +599,7 @@ def test_status_dot_mutates_and_paints(app: QApplication) -> None:
     image.fill(0)
     dot.render(image)
     assert dot._color == "#112233"
-    assert any(
-        image.pixelColor(x, y).alpha() > 0
-        for x in range(image.width())
-        for y in range(image.height())
-    )
+    assert any(image.pixelColor(x, y).alpha() > 0 for x in range(image.width()) for y in range(image.height()))
     dot.close()
 
 
@@ -712,15 +703,11 @@ def main() -> int:
         "card_base_module": type(card).__mro__[1].__module__,
         "layout": type(layout).__name__,
         "signal_roundtrip": seen == [1],
-        "exclusive_sidebar": [button.isChecked() for button in sidebar._buttons]
-        == [False, True],
+        "exclusive_sidebar": [button.isChecked() for button in sidebar._buttons] == [False, True],
         "public_api": all(public_names),
     }
     print(json.dumps(payload, sort_keys=True))
-    passed = all(
-        payload[name]
-        for name in ("signal_roundtrip", "exclusive_sidebar", "public_api")
-    )
+    passed = all(payload[name] for name in ("signal_roundtrip", "exclusive_sidebar", "public_api"))
     return 0 if passed else 1
 
 
@@ -1446,28 +1433,24 @@ def test_docs_publish_explicit_binding_install_contract() -> None:
             "THIRD_PARTY_NOTICES.md",
         )
     )
-    assert 'build-ui[pyside6]' in texts
-    assert 'build-ui[pyqt6]' in texts
+    assert "build-ui[pyside6]" in texts
+    assert "build-ui[pyqt6]" in texts
     assert "QT_API" in texts
     assert "QtPy" in texts
     assert "PyQt6 only" not in texts
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     usage = (ROOT / "USAGE.md").read_text(encoding="utf-8")
     for public_doc in (readme, usage):
-        assert 'build-ui[pyside6]' in public_doc
-        assert 'build-ui[pyqt6]' in public_doc
+        assert "build-ui[pyside6]" in public_doc
+        assert "build-ui[pyqt6]" in public_doc
         assert "installs QtPy but no Qt binding" in public_doc
     notice = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
     for token in ("QtPy", "MIT", "PyQt6", "GPL", "PySide6", "LGPLv3"):
         assert token in notice
     assert "does not relicense" in notice
-    assert "PyQt6 only" not in (ROOT / "docs" / "ENTERPRISE-READINESS.md").read_text(
-        encoding="utf-8"
-    )
+    assert "PyQt6 only" not in (ROOT / "docs" / "ENTERPRISE-READINESS.md").read_text(encoding="utf-8")
     assert 'src="docs/brand/build-ui-hero.svg"' in readme
-    assert "PyQt6 theme" not in (ROOT / "docs/brand/build-ui-hero.svg").read_text(
-        encoding="utf-8"
-    )
+    assert "PyQt6 theme" not in (ROOT / "docs/brand/build-ui-hero.svg").read_text(encoding="utf-8")
     assert not (ROOT / "docs/brand/build-ui-hero.png").exists()
 ```
 
