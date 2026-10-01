@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/.github/assets/zentropy-banner.png" alt="Build UI, a binding-neutral Qt 6 theme and widget library">
+  <img src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/.github/assets/banner.png" alt="Build UI, a binding-neutral Qt 6 theme and widget library">
 </p>
 <!-- Project mark: docs/brand/build-ui-mark.svg -->
 
@@ -113,4 +113,4 @@ Licensor to fund continued development. See [LICENSE](LICENSE) and
 
 ---
 
-**[Zentropy Labs](https://github.com/ZentropyLabs-ai)** · order out of entropy. An independent lab building evidence-first tools that leave a re-checkable artifact behind. Built by Zain Dana Harper in Seattle. The full workbench is at [Project Telos](https://harperz9.github.io).
+Built by **[Zain Dana Harper](https://harperz9.github.io)** in Seattle: evidence-first tools that leave a re-checkable artifact behind. The full workbench is at [Project Telos](https://harperz9.github.io).
