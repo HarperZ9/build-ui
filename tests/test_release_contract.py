@@ -141,9 +141,11 @@ def test_docs_publish_explicit_binding_install_contract() -> None:
         assert token in notice
     assert "does not relicense" in notice
     assert "PyQt6 only" not in (ROOT / "docs" / "ENTERPRISE-READINESS.md").read_text(encoding="utf-8")
-    assert ('src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/.github/assets/banner.png"') in readme
-    assert 'src="docs/brand/build-ui-hero.svg"' not in readme
-    assert "PyQt6 theme" not in (ROOT / "docs" / "brand" / "build-ui-hero.svg").read_text(encoding="utf-8")
+    # The README hero loads from an absolute URL on main, so it also renders on PyPI (4 October 2026).
+    assert ('src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/docs/art/hero-light.svg"') in readme
+    assert 'src="docs/art/hero-light.svg"' not in readme
+    for hero in ("hero-light.svg", "hero-dark.svg"):
+        assert "PyQt6 theme" not in (ROOT / "docs" / "art" / hero).read_text(encoding="utf-8")
     assert not (ROOT / "docs" / "brand" / "build-ui-hero.png").exists()
 
 
