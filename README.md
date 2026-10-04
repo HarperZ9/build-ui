@@ -1,20 +1,25 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/.github/assets/banner.png" alt="Build UI, a binding-neutral Qt 6 theme and widget library">
-</p>
-<!-- Project mark: docs/brand/build-ui-mark.svg -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/HarperZ9/build-ui/main/docs/art/hero-dark.svg">
+  <img src="https://raw.githubusercontent.com/HarperZ9/build-ui/main/docs/art/hero-light.svg" alt="build-ui: Qt 6 theme and widgets that give every Build app one look. A fine lattice of lines bulges outward around a bright core, as if seen through a lens, inside a ring." width="100%">
+</picture>
 
-# Build UI
+# build-ui
+
+Qt 6 theme and widgets that give every Build app one look.
+
+```
+pip install "build-ui[pyside6]>=2,<3"
+```
+
+[![version: 2.0.0](https://img.shields.io/badge/version-2.0.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/build-ui/)
+[![CI](https://github.com/HarperZ9/build-ui/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/build-ui/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/build-ui/blob/main/LICENSE)
+![python 3.10+](https://img.shields.io/badge/python-3.10%2B-e6e1d6?style=flat-square&labelColor=1a1712)
 
 > Binding-neutral Qt 6 theme and reusable widget library for the Build
 > ecosystem - one consistent look across every Build application.
 
 [Project Telos](https://harperz9.github.io) | [gather](https://github.com/HarperZ9/gather) | [crucible](https://github.com/HarperZ9/crucible) | [index](https://github.com/HarperZ9/index) | [forum](https://github.com/HarperZ9/forum) | [telos](https://github.com/HarperZ9/telos) | [emet](https://github.com/HarperZ9/emet) | [buildlang](https://github.com/HarperZ9/buildlang)
-
-[![CI](https://github.com/HarperZ9/build-ui/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/build-ui/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/build-ui)](https://pypi.org/project/build-ui/)
-![python: 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-![core dep: QtPy](https://img.shields.io/badge/core%20dep-QtPy-success.svg)
-[![license: fair-source](https://img.shields.io/badge/license-fair--source-blue.svg)](LICENSE)
 
 Build UI provides a single source of truth for color and Qt stylesheet
 generation, plus a small set of pre-styled widgets, so every application in
@@ -66,11 +71,9 @@ from build_ui.widgets import Card, Heading, Stat, NavButton, Sidebar, StatusDot,
 # Apply the shared stylesheet to a QApplication
 app.setStyleSheet(STYLE)
 
-
 # Build a themed variant by overriding constants
 class DarkC(C):
     BG = "#161616"
-
 
 dark_style = create_stylesheet(DarkC)
 
