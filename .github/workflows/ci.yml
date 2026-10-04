@@ -94,3 +94,9 @@ jobs:
           python -c "import subprocess, sys;
           flags=subprocess.check_output([sys.executable, '-m', 'qtpy', 'mypy-args'], text=True).split();
           raise SystemExit(subprocess.call([sys.executable, '-m', 'mypy', *flags, 'build_ui']))"
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py
